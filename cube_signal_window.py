@@ -151,6 +151,7 @@ def jcmt_window(cube, nbin=32, clips=[2,2.5,3], plot_progress=None, avg_mode='me
         window_i = window[:, iy, ix]
         ax.step(vel, spec)
         ax.step(vel, window_i)
+        ax.set_title(f"({iy},{ix})", fontsize=8)
     
     plt.show()
     
