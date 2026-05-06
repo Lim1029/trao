@@ -1,0 +1,5 @@
+figure.dpi: 162
+xtick.minor.visible: True
+ytick.minor.visible: True
+ytick.direction: in
+xtick.direction: in
