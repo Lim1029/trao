@@ -9,14 +9,16 @@ from pybaselines.polynomial import imodpoly
 import matplotlib.pyplot as plt
 u.add_enabled_units(u.def_unit(['K (Tmb)'], represents=u.K))
 u.add_enabled_units(u.def_unit(["K (Ta*)"], represents=u.K))
-from codes.utils import cube_spectral_smooth, spectrum_smooth
+from utils import cube_spectral_smooth, spectrum_smooth
+from utils.cube_mask import cube_mask
+from utils.spectrum_smooth import spectrum_smooth
 from pybaselines import Baseline
 import sys 
 from astropy.io import fits
-from codes.utils.cube_smooth_tophat import TopHat_3DFilter
+from utils.cube_smooth_tophat import TopHat_3DFilter
 
 # matplotlib configuration'
-plt.style.use('./codes/astro.mplstyle')
+#plt.style.use('./codes/astro.mplstyle')
 plt.rcParams['figure.figsize'] = (1920/162, 1080/162)
 
 ############################ cube operation ############################
@@ -151,29 +153,49 @@ def jcmt_window(cube, nbin=32, clips=[2,2.5,3], plot_progress=None, avg_mode='me
         window_i = window[:, iy, ix]
         ax.step(vel, spec)
         ax.step(vel, window_i)
+        ax.set_title(f"({iy},{ix})", fontsize=8)
     
     plt.show()
     
     return window, edges
 
-def window_visualise(cube, window, original):
-    # plot the average spectra and all ever-defined window
-    averaged = cube.mean(axis=(1,2))
+def window_visualise(cube, window,baseline, original, snr_threshold=0):
+
+    vel = cube.spectral_axis.value  
+    
+    # averaging the corrected spectra, baseline and raw spectra.
+    # no masking 
+    if snr_threshold == 0:
+        corrected_avg = cube.mean(axis=(1,2))
+        baseline_avg  = np.nanmean(baseline, axis=(1,2))
+        original_avg  = np.nanmean(original, axis=(1,2))
+       
+    # with masking 
+    else:
+        corrected_masked, expanded_mask = cube_mask(cube, snr_threshold) 
+        baseline_masked = np.where(expanded_mask, baseline, np.nan)
+        original_masked = np.where(expanded_mask, original, np.nan)
+
+        corrected_avg = np.nanmean(corrected_masked, axis=(1,2))
+        baseline_avg = np.nanmean(baseline_masked, axis=(1,2))
+        original_avg = np.nanmean(original_masked, axis=(1,2))
+    
     window_averaged = np.nanmean(window, axis=(1,2))
-    original_averaged = np.nanmean(original, axis=(1,2))
+    
     # print(window_averaged)
     # is_window = np.where(window_averaged>0)
-    vel = cube.spectral_axis.value  
+    
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    ax.step(vel, original_averaged, linewidth=0.5, alpha=0.1, color='black')
-    ax.step(vel, averaged, linewidth=0.5, alpha=0.1, color='blue')
-    averaged_smoothed = spectrum_smooth(averaged, vel, 0.3)
-    original_averaged_smoothed = spectrum_smooth(original_averaged, vel, 0.3)
+    ax.step(vel, original_avg, linewidth=0.5, alpha=0.1, color='black')
+    ax.step(vel, corrected_avg, linewidth=0.5, alpha=0.1, color='blue')
+    ax.plot(vel, baseline_avg, linewidth = 0.5, color= 'black', linestyle='--')
+    averaged_smoothed = spectrum_smooth(corrected_avg, vel, 0.3)
+    original_averaged_smoothed = spectrum_smooth(original_avg, vel, 0.3)
     # breakpoint()
     ax.step(averaged_smoothed.spectral_axis, averaged_smoothed.flux)
     ax.step(original_averaged_smoothed.spectral_axis, original_averaged_smoothed.flux, alpha=0.5)
-    ax.set_ylabel('K (Tmb)')
+    ax.set_ylabel('K (T$_{A}$)')
     ax.set_xlabel('LSR Velocity (km/s)')
     for i in range(len(vel)-1):
         ax.axvspan(vel[i], vel[i+1], alpha=1-window_averaged[i], color='yellow')
@@ -195,10 +217,12 @@ if __name__ == "__main__":
     if choice == '1':
         cube_path = input("Input full/relative path to cube fits: ")
         cube = SpectralCube.read(cube_path).with_spectral_unit(u.km/u.s)
+        snr_threshold = float(input("Enter SNR threshold for cube masking (0 to skip): "))
         hdul = fits.open(cube_path)
         window = hdul['mask'].data
         original = hdul['UN-BASELINED'].data
-        window_visualise(cube, window, original)
+        baseline = hdul['BASELINE'].data
+        window_visualise(cube, window, baseline, original, snr_threshold)
     elif choice == '2':
         comment = 'During the signal windowing process, '
         cube_path = input("Input full/relative path to cube fits: ")

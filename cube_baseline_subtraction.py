@@ -1,3 +1,4 @@
+#just to check
 # this code explores different methods of performing baseline subtraction of a cube
 # last update: 7 April 2026
 
@@ -11,11 +12,11 @@ u.add_enabled_units(u.def_unit(['K (Tmb)'], represents=u.K))
 u.add_enabled_units(u.def_unit(["K (Ta*)"], represents=u.K))
 # cube = SpectralCube.read(args.input_cube_path)
 # D:/NaritNextcloud/NARIT_RA/carta/TRAO/fits_files/w43
-from codes.utils import cube_spectral_smooth
+from utils import cube_spectral_smooth
 from pybaselines import Baseline
 import sys 
 from astropy.io import fits
-from codes.cube_signal_window import jcmt_window
+from cube_signal_window import jcmt_window
 import matplotlib.colors as mcolors
 from scipy.interpolate import interp1d
 from scipy.interpolate import make_splrep, make_lsq_spline
@@ -173,7 +174,7 @@ def baseline_iterative_poly(cube, window, max_order, smooth_vel=0.3):
     return corrected_cube, baseline_cube
     
 # reference: https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.make_splrep.html#scipy.interpolate.make_splrep    
-def baseline_spline(cube, window, k=3):
+def baseline_spline(cube, window,knot_start= 100, knot_spacing = 100, k=3):
     x = cube.spectral_axis.value
     data = cube.unmasked_data[:].value # (nspec, ny, nx)
     mask_arr = window
@@ -187,7 +188,7 @@ def baseline_spline(cube, window, k=3):
             mask = mask_arr[:,j,i]
             mask = mask.ravel()
             # make knots (t) every 100 channels, and at the boundary, but skip the emission window
-            t = x[np.where(mask==1)][100:-1:100]
+            t = x[np.where(mask==1)][knot_start:-1:knot_spacing]
             t = np.r_[(x[0],)*4,t,(x[-1],)*4]       
 
             # breakpoint()
@@ -268,7 +269,9 @@ if __name__ == "__main__":
             corrected, baseline = baseline_iterative_poly(cube, window, max_order)
             comment = comment + f"The baseline is fitted with polynomial function with automatically selected order, until order {max_order}. "
         case 3:
-            corrected, baseline = baseline_spline(cube, window)
+            knot_start = int(input("Input knot starting channel:"))
+            knot_spacing = int(input("Input knot spacing in channels:"))
+            corrected, baseline = baseline_spline(cube, window, knot_start = knot_start, knot_spacing = knot_spacing)
             comment = comment + f"The baseline is fitted with cube spline function."
         
         case _:

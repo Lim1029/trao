@@ -2,6 +2,23 @@ from codes.cube_rms_estimate import rms_negative
 import numpy as np
 
 # this mask is to make any PIXEL with snr < threshold become nan
+# from codes.cube_rms_estimate import rms_negative
+import numpy as np
+
+# this mask is to make any PIXEL with snr < threshold become nan
+
+
+def rms_negative(cube):
+    data = cube.unmasked_data[:].value   # (v, y, x)
+
+    # mask positive values
+    neg_data = np.where(data < 0, data, np.nan)
+
+    rms_map = np.sqrt(np.nanmean(neg_data**2, axis=0))
+    rms_global = np.nanmean(rms_map)
+
+    return rms_map, rms_global
+
 def cube_mask(cube, mask_threshold):
     spectra = cube.unmasked_data[:].value
     spectra_max = np.nanmax(spectra, axis=0)
@@ -11,7 +28,8 @@ def cube_mask(cube, mask_threshold):
 
     expanded_mask = mask[np.newaxis, :, :]
     masked_spectra = np.where(expanded_mask, spectra, np.nan)
-    return masked_spectra
+    return masked_spectra, expanded_mask
+
     
 # this mask is to make any CHANNEL with value < threshold of that PIXEL become nan
 def cube_mask_channel(cube, mask_threshold):
