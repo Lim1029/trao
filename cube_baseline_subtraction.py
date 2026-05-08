@@ -1,6 +1,5 @@
-#just to check
 # this code explores different methods of performing baseline subtraction of a cube
-# last update: 7 April 2026
+# last update: 8 May 2026
 
 # from useful_functions import baseline_cube
 from spectral_cube import SpectralCube, BooleanArrayMask
@@ -12,7 +11,10 @@ u.add_enabled_units(u.def_unit(['K (Tmb)'], represents=u.K))
 u.add_enabled_units(u.def_unit(["K (Ta*)"], represents=u.K))
 # cube = SpectralCube.read(args.input_cube_path)
 # D:/NaritNextcloud/NARIT_RA/carta/TRAO/fits_files/w43
-from utils import cube_spectral_smooth
+from utils.cube_spectral_smooth import cube_spectral_smooth
+from utils.average_plotting import average_plotting
+from utils.cube_mask import cube_mask
+from utils.spectrum_smooth import spectrum_smooth
 from pybaselines import Baseline
 import sys 
 from astropy.io import fits
@@ -221,7 +223,8 @@ def no_window(cube):
     x = cube.spectral_axis.value
     total_window = np.full(len(x), True)
     window = np.broadcast_to(total_window[:, None, None], cube.shape).astype(int)
-    return window        
+    return window  
+    
     
 if __name__ == "__main__":
     comment = 'During the baseline subtraction process, '
@@ -278,6 +281,23 @@ if __name__ == "__main__":
             print('Nothing is done')
             sys.exit(0)
             
+            
+    # visualising the baseline fitting
+    show_plot = input(
+        "Visualise baseline fitting? (y/n): "
+    ).strip().lower()
+
+    if show_plot == 'y':
+        
+        snr_threshold = float(input("Enter SNR threshold for cube masking (0 to skip): "))
+
+        average_plotting(
+            cube,
+            corrected=corrected,
+            window=window,
+            baseline=baseline,
+            snr_threshold=snr_threshold
+        )       
     # saving results by creating a file with multiple hdu
     output_path = input("input the output path: ")
     primary_header = cube.header
