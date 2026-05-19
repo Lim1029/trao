@@ -14,9 +14,9 @@ def waterfall_plot(cube, ax):
     x_axis = cube.spectral_axis.value
     nv, ny, nx = spectra.shape
     spectra_flattened = spectra.reshape(nv, ny*nx).T
-    vmin = np.nanpercentile(spectra_flattened, 20)
+    vmin = np.nanpercentile(spectra_flattened, 10)
     vmax = np.nanpercentile(spectra_flattened, 99)
-    im = ax.imshow(spectra_flattened, origin='lower', vmin=vmin, vmax=vmax, aspect='auto')
+    im = ax.imshow(spectra_flattened, origin='lower', vmin=vmin, vmax=vmax, aspect='auto', extent=[x_axis[0], x_axis[-1], 0, ny*nx] )
     
     # ax.set_xticks(x_axis)
     return im, ax
@@ -32,4 +32,7 @@ if __name__ == '__main__':
     ax = fig.add_subplot(111)
     im,ax = waterfall_plot(cube, ax)
     plt.colorbar(im, ax=ax)
+    
+    ax.set_xlabel('LSR Velocity (km/s)')
+    ax.set_ylabel('Pixels')
     plt.show()
