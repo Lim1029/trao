@@ -9,13 +9,14 @@ from pybaselines.polynomial import imodpoly
 import matplotlib.pyplot as plt
 u.add_enabled_units(u.def_unit(['K (Tmb)'], represents=u.K))
 u.add_enabled_units(u.def_unit(["K (Ta*)"], represents=u.K))
-from utils import cube_spectral_smooth, spectrum_smooth
-from utils.cube_mask import cube_mask
-from utils.spectrum_smooth import spectrum_smooth
+from codes.utils import cube_spectral_smooth, spectrum_smooth
+from codes.utils.cube_mask import cube_mask
+from codes.utils.spectrum_smooth import spectrum_smooth
 from pybaselines import Baseline
 import sys 
 from astropy.io import fits
-from utils.cube_smooth_tophat import TopHat_3DFilter
+from codes.utils.cube_smooth_tophat import TopHat_3DFilter
+from scipy.ndimage import gaussian_filter1d, binary_dilation
 
 # matplotlib configuration'
 #plt.style.use('./codes/astro.mplstyle')
@@ -34,7 +35,7 @@ def cube_smooth(cube, target_reso):
 ############################ window defining ############################
 # this follows the MFITTREND procedure to identify spectral window dynamically
 
-def jcmt_window_spectrum(v,spec,nbin=24, clips=[2,2.5,3], avg_mode='mean'):
+def jcmt_window_spectrum(v,spec,nbin=20, clips=[2,2.5,3], avg_mode='mean'):
     nv = len(v)
     bin_size = nv // nbin
     remainder = nv % nbin 
@@ -62,13 +63,14 @@ def jcmt_window_spectrum(v,spec,nbin=24, clips=[2,2.5,3], avg_mode='mean'):
     mask_full = np.array(mask_full)
     return mask_full
 
-def jcmt_window(cube, nbin=32, clips=[2,2.5,3], plot_progress=None, avg_mode='mean', smooth_kernel=None):
+def jcmt_window(cube, nbin=30, clips=[2,2.5,3], plot_progress=None, avg_mode='mean', smooth_kernel=None, bin_expand=1):
     data = cube.filled_data[:].value # (nspec, ny, nx)
     # for weak low SNR emission, we may want to smooth first
     if smooth_kernel != None:
         data = TopHat_3DFilter(data, smooth_kernel)
     window = np.full(data.shape, np.nan)
-    vel = cube.spectral_axis.value
+    #vel = cube.spectral_axis.value
+    vel = cube.spectral_axis.to(u.km/u.s).value
     # define the binning edges
     nv, ny, nx = data.shape
     bin_size = nv // nbin
@@ -117,11 +119,17 @@ def jcmt_window(cube, nbin=32, clips=[2,2.5,3], plot_progress=None, avg_mode='me
                 
             mask_binned = ~np.isnan(binned)
             mask_binned_old = mask_binned.copy()
-            # protect the emission wings, by assigning true to the 1 neighour
-            for i in range(1,len(mask_binned)-1):
-                if mask_binned_old[i]==False:
-                    mask_binned[i-1] = False
-                    mask_binned[i+1] = False
+            # protect the emission wings, by assigning true to the neighour
+            
+            emission_binned = ~mask_binned
+
+            emission_binned = binary_dilation(emission_binned, iterations=bin_expand)
+            mask_binned = ~emission_binned
+            
+            #for i in range(1,len(mask_binned)-1):
+             #    if mask_binned_old[i]==False:
+              #      mask_binned[i-1] = False
+               #     mask_binned[i+1] = False
             # protect the boundary to exclude from masking (important during spline baseline fitting)
             mask_binned[0] = True
             mask_binned[-1] = True

@@ -11,14 +11,14 @@ u.add_enabled_units(u.def_unit(['K (Tmb)'], represents=u.K))
 u.add_enabled_units(u.def_unit(["K (Ta*)"], represents=u.K))
 # cube = SpectralCube.read(args.input_cube_path)
 # D:/NaritNextcloud/NARIT_RA/carta/TRAO/fits_files/w43
-from utils.cube_spectral_smooth import cube_spectral_smooth
-from utils.average_plotting import average_plotting
-from utils.cube_mask import cube_mask
-from utils.spectrum_smooth import spectrum_smooth
+from codes.utils.cube_spectral_smooth import cube_spectral_smooth
+from codes.utils.average_plotting import average_plotting
+from codes.utils.cube_mask import cube_mask
+from codes.utils.spectrum_smooth import spectrum_smooth
 from pybaselines import Baseline
 import sys 
 from astropy.io import fits
-from cube_signal_window import jcmt_window
+from codes.cube_signal_window import jcmt_window
 import matplotlib.colors as mcolors
 from scipy.interpolate import interp1d
 from scipy.interpolate import make_splrep, make_lsq_spline
@@ -176,7 +176,7 @@ def baseline_iterative_poly(cube, window, max_order, smooth_vel=0.3):
     return corrected_cube, baseline_cube
     
 # reference: https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.make_splrep.html#scipy.interpolate.make_splrep    
-def baseline_spline(cube, window,knot_start= 100, knot_spacing = 100, k=3):
+def baseline_spline(cube, window, knot_start= 200, knot_spacing = 200, k=3, edge_channels=30):
     x = cube.spectral_axis.value
     data = cube.unmasked_data[:].value # (nspec, ny, nx)
     mask_arr = window
@@ -189,13 +189,42 @@ def baseline_spline(cube, window,knot_start= 100, knot_spacing = 100, k=3):
             y = np.nan_to_num(y)
             mask = mask_arr[:,j,i]
             mask = mask.ravel()
-            # make knots (t) every 100 channels, and at the boundary, but skip the emission window
-            t = x[np.where(mask==1)][knot_start:-1:knot_spacing]
-            t = np.r_[(x[0],)*4,t,(x[-1],)*4]       
+            y_new = y.copy()
+            
+            mask_region = (mask == 0)
+    
+            if np.any(mask_region):
+
+                idx = np.where(mask_region)[0]
+
+                # split into separate contiguous regions
+                regions = np.split(idx, np.where(np.diff(idx) != 1)[0] + 1)
+
+                for region in regions:
+
+                    left = region[0] - 1
+                    right = region[-1] + 1
+
+                    if left >= edge_channels and right < len(x)-edge_channels:
+
+                        left_val = np.nanmean(y[left-edge_channels:left])
+                        right_val = np.nanmean(y[right:right+edge_channels])
+
+                        y_new[region] = np.interp(
+                                x[region],
+                                [x[left], x[right]],
+                                [left_val, right_val]
+                        )  
+            # make knots (t) every N channels, and at the boundary, but skip the emission window
+            
+            t = x[knot_start:-1:knot_spacing]
+            #t = x[np.where(mask==1)][knot_start:-1:knot_spacing]
+            t = np.r_[(x[0],)*(k+1),t,(x[-1],)*(k+1)]       
 
             # breakpoint()
             try:
-                spl = make_lsq_spline(x, y, t, k, w=mask)
+                #spl = make_lsq_spline(x, y, t, k, w=mask)
+                spl = make_lsq_spline(x, y_new, t, k)
             except:
                 breakpoint()
             baseline = spl(x)
@@ -255,11 +284,12 @@ if __name__ == "__main__":
             clips = input("Input clip (in unit of sigma) separated by , (e.g., 2,2.5,3): ")
             clips = list(map(float,clips.split(',')))
             smooth_kernel = input("tophat smooth cube prior to windowing? (enter kernel size v,y,x or 0 to skip): ")
+            bin_expand = int(input("Number of neighboring bin each side to mask as emission to protect wings (default 1): "))
             if smooth_kernel != '0':
                 smooth_kernel = list(map(int,smooth_kernel.split(',')))
             else:
                 smooth_kernel = None
-            window, edges = jcmt_window(cube, nbin=nbin, clips=clips, smooth_kernel=smooth_kernel)
+            window, edges = jcmt_window(cube, nbin=nbin, clips=clips, smooth_kernel=smooth_kernel, bin_expand= bin_expand)
             comment = comment + f"Window is automatically defined with nbin of {nbin}, clipping with {clips} and tophat smoothed with kernel size {smooth_kernel} prior to windowing."
     fitting_method = int(input("Input method (1) fixed poly (2) iterative poly (3) spline: "))
     match fitting_method:
