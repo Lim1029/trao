@@ -91,14 +91,16 @@ def jcmt_window(cube, nbin=30, clips=[2,2.5,3], plot_progress=None, avg_mode='me
             # compute the mean value of each bin
             binned = [np.mean(spec[edges[i]:edges[i+1]]) for i in range(nbin)]
             binned = np.array(binned, dtype=float)
+            
+            clipped_binned = binned.copy()
             # iteratively calculate mean and standard deviation of binned means and mask out outliers 
             for clip in clips:
                 if avg_mode == 'mean':
-                    avg = np.nanmean(binned)
+                    avg = np.nanmean(clipped_binned)
                 elif avg_mode == 'median':
-                    avg = np.nanmedian(binned)
+                    avg = np.nanmedian(clipped_binned)
                 std = np.nanstd(binned)
-                binned = np.where(binned > avg+clip*std, np.nan, binned)
+                clipped_binned = np.where(clipped_binned > avg+clip*std, np.nan, binned)
                 
                 # we can plot and see
                 if plot_progress:
@@ -117,7 +119,7 @@ def jcmt_window(cube, nbin=30, clips=[2,2.5,3], plot_progress=None, avg_mode='me
                     plt.axhline(avg+clip*std, linewidth=1, color='red')
                     plt.show()
                 
-            mask_binned = ~np.isnan(binned)
+            mask_binned = ~np.isnan(clipped_binned)
             mask_binned_old = mask_binned.copy()
             # protect the emission wings, by assigning true to the neighour
             
@@ -126,10 +128,6 @@ def jcmt_window(cube, nbin=30, clips=[2,2.5,3], plot_progress=None, avg_mode='me
             emission_binned = binary_dilation(emission_binned, iterations=bin_expand)
             mask_binned = ~emission_binned
             
-            #for i in range(1,len(mask_binned)-1):
-             #    if mask_binned_old[i]==False:
-              #      mask_binned[i-1] = False
-               #     mask_binned[i+1] = False
             # protect the boundary to exclude from masking (important during spline baseline fitting)
             mask_binned[0] = True
             mask_binned[-1] = True
