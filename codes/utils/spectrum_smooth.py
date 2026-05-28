@@ -15,7 +15,7 @@ def spectrum_smooth(spectrum, spectral_axis, target_resolution):
     
     current_resolution = abs(spectral_axis[1]-spectral_axis[0])
     fwhm_gaussian = (target_resolution**2 - current_resolution**2)**0.5
-    sigma_gaussian = fwhm_gaussian / 2*np.sqrt(2*np.log(2))
+    sigma_gaussian = fwhm_gaussian / (2*np.sqrt(2*np.log(2)))
     sigma_gaussian_pixel = sigma_gaussian / current_resolution
     
     spec1_gsmooth = gaussian_smooth(input_spec, stddev=sigma_gaussian_pixel)

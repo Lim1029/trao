@@ -8,6 +8,10 @@ import numpy as np
 from codes.utils import cube_spectral_smooth
 plt.style.use('./codes/astro.mplstyle')
 
+def cube_trim(cube, vmin, vmax):
+    cube = cube.spectral_slab(vmin*u.km/u.s, vmax*u.km/u.s)
+    return cube
+
 def waterfall_plot(cube, ax):
     # flatten the x y axis of the cube
     spectra = cube.unmasked_data[:].value
@@ -25,6 +29,11 @@ def waterfall_plot(cube, ax):
 if __name__ == '__main__':
     cube_path = input("input full/relative path to cube fits: ")
     cube = SpectralCube.read(cube_path).with_spectral_unit(u.km/u.s)
+    print(f"Currently, the cube has a bandwidth of {cube.spectral_axis[0]:.2f} to {cube.spectral_axis[-1]:.2f} km/s")
+    vlims = input("Input vmin and vmax in km/s separated by ',' to trim the cube (0 to skip trimming): ")
+    if vlims != '0':
+        vmin, vmax = list(map(float,vlims.split(',')))
+        cube = cube_trim(cube, vmin, vmax)
     target_reso = float(input("Input target resolution (km/s) to perform smoothing prior to plotting (0 to skip): "))
     if target_reso != 0:
         cube = cube_spectral_smooth(cube, target_reso, unit=u.km/u.s)

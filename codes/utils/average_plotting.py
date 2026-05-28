@@ -5,16 +5,17 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+import astropy.units as u
 
-from utils.cube_mask import cube_mask
-from utils.spectrum_smooth import spectrum_smooth
+from codes.utils.cube_mask import cube_mask
+from codes.utils.spectrum_smooth import spectrum_smooth
 
 def average_plotting(cube, corrected=None, window=None, baseline=None, snr_threshold=0):
 
 
     # cube: raw spectra 
-    
-    vel = cube.spectral_axis.value  
+     
+    vel = cube.spectral_axis.to(u.km/u.s).value
     
     # averaging and masking(optional) the corrected spectra, baseline and raw spectra.
     
@@ -47,7 +48,7 @@ def average_plotting(cube, corrected=None, window=None, baseline=None, snr_thres
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.step(vel, original_avg, linewidth=0.5, alpha=0.2, color='black', label='raw')
-    
+  
     if baseline is not None:
         ax.plot(vel, baseline_avg, color= 'black', linestyle='--', label='baseline')
     
@@ -70,7 +71,7 @@ def average_plotting(cube, corrected=None, window=None, baseline=None, snr_thres
     ax.set_ylabel('K (Ta*)')
     ax.set_xlabel('LSR Velocity (km/s)')
     ax.axhline(0, color='red', linestyle='dashed')
-    ax.legend()
+    #ax.legend()
 
     #if snr_threshold == 0:
      #   ax.set_title("Average spectra, no masking")
