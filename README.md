@@ -16,6 +16,7 @@ And also the spectra can be smoothed to desired resolution to get better snr for
 ## Masking Methods
 
 There are three option in present pipeline for masking 
+
     1. No masking
     2. Fixed Window
     3. Automatic windowing
