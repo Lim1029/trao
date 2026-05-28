@@ -32,6 +32,6 @@ for example if the spectral range is from 0 to 160 km/s and we are defining that
 
 ### Automatic window
 
-One other masking method we have is automatic windowing adapted from [this paper]/(https://ui.adsabs.harvard.edu/abs/2015MNRAS.453...73J/abstract). 
+One other masking method we have is automatic windowing adapted from [this paper](https://ui.adsabs.harvard.edu/abs/2015MNRAS.453...73J/abstract).
 
 The working of this method can be understood by this [illustration](https://lim1029.github.io/jcmt_window_demo.pdf)
