@@ -57,7 +57,13 @@ parameters:
 
 One other masking method we have is automatic windowing adapted from [this paper](https://ui.adsabs.harvard.edu/abs/2015MNRAS.453...73J/abstract).
 
-Additionally as a option for weak signal we can also smooth the spectra with a 3D smoothing with smooth_kernel to get better SNR. for this we are using the cube_smooth_tophat.py 
+The python code is in the file 
+
+    codes/cube_signal_window.py
+
+Additionally as a option for weak signal we can also smooth the spectra with a 3D smoothing with smooth_kernel to get better SNR. for this we are using the 
+
+    codes/utils/cube_smooth_tophat.py 
 
 The working of this method can be understood by this [illustration](https://lim1029.github.io/jcmt_window_demo.pdf)
 
