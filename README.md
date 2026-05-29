@@ -1,5 +1,11 @@
 # Baseline Method
 
+To perform baseline subtraction this terminal command can be used 
+
+    python -m codes.cube_baseline_subtraction
+
+The cube_baseline_subtraction is being run as a module here from the directory which contains codes/cube_baseline_subtraction.py
+
 Here is the discription about the method we are using for the baseline subtraction.
 
 The overall workflow for the baseline subtration can be understood by this flowchart
@@ -12,10 +18,18 @@ The overall workflow for the baseline subtration can be understood by this flowc
 
 Optionally the the spectral cube can be trimmed to a velocity range to remove the bad channels in either end of the spectra.
 
-Parameters : vmin ( minimum velcoity limit)
-             vmax ( upper velocity limit)
+Parameters : 
+
+    vmin ( minimum velcoity limit)
+    vmax ( upper velocity limit)
+
+### Smoothing
 
 And also the spectra can be smoothed to desired resolution to get better snr for signal ditection.
+
+Parameters :
+
+      target_reso ( Resolution to which to smooth the spectra)
 
 
 ## Masking Methods
@@ -35,11 +49,25 @@ In this case we are defining that all the channels for a pixel is baseline, ther
 We define a velocity range to consider as emission. 
 for example if the spectral range is from 0 to 160 km/s and we are defining that consider 50 to 60 km/s as emission, then the channels outside 50-60 km/s will be assigned as 1 (baseline).
 
+parameters:
+
+    vlims (pair of velocity ranges to mask as emission)
+
 ### Automatic window
 
 One other masking method we have is automatic windowing adapted from [this paper](https://ui.adsabs.harvard.edu/abs/2015MNRAS.453...73J/abstract).
 
+Additionally as a option for weak signal we can also smooth the spectra with a 3D smoothing with smooth_kernel to get better SNR. for this we are using the cube_smooth_tophat.py 
+
 The working of this method can be understood by this [illustration](https://lim1029.github.io/jcmt_window_demo.pdf)
+
+parameters:
+
+    nbin ( number of bins to divide the channels )
+    clips ( sigma levels to estimate the threshold to identify the emission bins (currently we are using three iterations)
+    smooth_kernel ( used for 3D smoothing the cube ) 
+    bin_expand ( number of neighbouring bins to expand to consider as emission)
+    
 
 ## Baseline Fitting methods
 
