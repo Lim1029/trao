@@ -99,6 +99,8 @@ For this method for each pixel we take the following steps
     the iteration stop when the AIC starts to get worse.
     the order with lowest AIC is choosen to fit the baseline and subtracted from the spectra 
 
+An upper limit to the polynomial order is required to define first.
+
 
 ### Spline Fit
 
@@ -106,6 +108,8 @@ parameters
 
     knot_start ( First channel to assign as knot point)
     knot_spacing ( channel spacing between 2 knots )
+    edge_channels ( number of edge channels to take a mean or median to get a straight line to replece the emission part. )
+    
     
 
 
