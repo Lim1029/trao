@@ -304,7 +304,8 @@ if __name__ == "__main__":
         case 3:
             knot_start = int(input("Input knot starting channel:"))
             knot_spacing = int(input("Input knot spacing in channels:"))
-            corrected, baseline = baseline_spline(cube, window, knot_start = knot_start, knot_spacing = knot_spacing)
+            edge_channels = int(input("Input edge averaging channels [30]: ") or 30)
+            corrected, baseline = baseline_spline(cube, window, knot_start = knot_start, knot_spacing = knot_spacing, edge_channels = edge_channels)
             comment = comment + f"The baseline is fitted with cube spline function."
         
         case _:
