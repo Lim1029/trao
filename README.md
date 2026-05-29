@@ -25,7 +25,7 @@ Parameters :
 
 ### Smoothing
 
-And also the spectra can be smoothed to desired resolution to get better snr for signal ditection.
+And also the spectra can be smoothed to desired resolution to get better snr for signal detection.
 
 Parameters :
 
@@ -101,5 +101,11 @@ For this method for each pixel we take the following steps
 
 
 ### Spline Fit
+
+parameters
+
+    knot_start ( First channel to assign as knot point)
+    knot_spacing ( channel spacing between 2 knots )
+    
 
 
