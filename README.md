@@ -1,8 +1,5 @@
 # Baseline Method
 
-To perform baseline subtraction this terminal command can be used 
-
-    python -m codes.cube_baseline_subtraction
 
 The cube_baseline_subtraction is being run as a module here from the directory which contains codes/cube_baseline_subtraction.py
 
@@ -109,6 +106,48 @@ parameters
     knot_start ( First channel to assign as knot point)
     knot_spacing ( channel spacing between 2 knots )
     edge_channels ( number of edge channels to take a mean or median to get a straight line to replece the emission part. )
+
+## How to Run 
+
+To perform baseline subtraction this terminal command can be used 
+
+    python -m codes.cube_baseline_subtraction
+
+
+## Example Session
+
+    Input full/relative path to cube fits: /home/vinay/narit/w43/fits/trao/w43_c18o_mos.fits
+
+    Input vmin and vmax in km/s separated by ',' to trim the cube (0 to skip trimming): 20,150
+    
+    Input target resolution (km/s) to perform smoothing prior to baseline fitting (0 to skip): 0
+
+    How to define spectral window? (1) no window (2) user-defined (3) automatic: 3
+
+    Input nbin, to divide 3121 channels: 40
+
+    Input clip (in unit of sigma) separated by ',':  1.5,2,2.5
+    
+    tophat smooth cube prior to windowing? (enter kernel size v,y,x or 0 to skip): 5,5,5
+
+    Number of neighboring bin each side to mask as emission to protect wings: 2
+
+    Input Baseline method: (1) fixed poly (2) iterative poly (3) spline: 3
+
+    Input interior knot starting channel: 200
+
+    Input knot spacing in channels: 200
+
+    Input edge averaging channels: 50
+
+    Visualise baseline fitting? (y/n): y
+
+    Enter SNR threshold for cube masking (0 to skip): 0
+
+    Save this plot? (y/n): n
+
+    input the output path: /home/vinay/narit/w43/fits/trao/base/spline/c18o.fits
+    
     
     
 
