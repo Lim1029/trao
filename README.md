@@ -114,7 +114,7 @@ To perform baseline subtraction this terminal command can be used
     python -m codes.cube_baseline_subtraction
 
 
-## Example Session
+## Example
 
     Input full/relative path to cube fits: /home/vinay/narit/w43/fits/trao/w43_c18o_mos.fits
 
