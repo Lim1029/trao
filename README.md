@@ -132,7 +132,7 @@ To perform baseline subtraction this terminal command can be used
 
     Number of neighboring bin each side to mask as emission to protect wings: 2
 
-    Input Baseline method: (1) fixed poly (2) iterative poly (3) spline: 3
+    Input Baseline Fitting method: (1) fixed poly (2) iterative poly (3) spline: 3
 
     Input interior knot starting channel: 200
 
