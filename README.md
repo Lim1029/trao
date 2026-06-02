@@ -9,7 +9,7 @@ The overall workflow for the baseline subtraction can be understood by this flow
 
 <img width="600" height="900" alt="base_flow" src="https://github.com/user-attachments/assets/192e80ce-16ee-4e6c-b372-3e3c63a2413e" />
 
-##  # Preprocessing the Cube
+## # Preprocessing the Cube
 
 ### Trimming 
 
@@ -29,9 +29,9 @@ Parameters :
       target_reso ( Resolution to which to smooth the spectra)
 
 
-##  # Masking Methods
+## # Masking Methods
 
-There are three option in present pipeline for masking 
+There are three options in present pipeline for masking 
 
     1. No masking
     2. Fixed Window
@@ -39,7 +39,7 @@ There are three option in present pipeline for masking
 
 ### 1. No window
 
-In this case we are defining that all the channels for a pixel is baseline, there is no emission part.
+In this case we are defining that all channels for a pixel are treated as baseline, there is no emission part.
 
 ### 2. Fixed window
 
