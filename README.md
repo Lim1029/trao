@@ -37,11 +37,11 @@ There are three option in present pipeline for masking
     2. Fixed Window
     3. Automatic windowing
 
-### No window
+### 1. No window
 
 In this case we are defining that all the channels for a pixel is baseline, there is no emission part.
 
-### Fixed window
+### 2. Fixed window
 
 We define a velocity range to consider as emission. 
 for example if the spectral range is from 0 to 160 km/s and we are defining that consider 50 to 60 km/s as emission, then the channels outside 50-60 km/s will be assigned as 1 (baseline).
@@ -50,7 +50,7 @@ parameters:
 
     vlims (pair of velocity ranges to mask as emission)
 
-### Automatic window
+### 3. Automatic window
 
 One other masking method we have is automatic windowing adapted from [this paper](https://ui.adsabs.harvard.edu/abs/2015MNRAS.453...73J/abstract).
 
@@ -80,7 +80,7 @@ So for the baseline fitting we also have three methods for now
     2. Iterative Polynomial
     3. Spline Fit
 
-### Fixed Polynomial
+### 1. Fixed Polynomial
 
 In this method for every pixel a single fixed order(user defined) polynomial is used to fit the baseline in the part defined as baseline by the mask created in the above step.
 
@@ -90,7 +90,7 @@ parameters:
 
     poly_order ( polynomial order to fit baseline )
 
-### Iterative Polynomial 
+### 2. Iterative Polynomial 
 
 For this method for each pixel we take the following steps
     
@@ -109,7 +109,7 @@ parameters :
 For AIC this note can be referred : [AIC_statistics.pdf](https://github.com/user-attachments/files/28490685/AIC_statistics.pdf)
 
 
-### Spline Fit
+### 3. Spline Fit
 
 By default order 3 ( cubic spline ) is used.
 
