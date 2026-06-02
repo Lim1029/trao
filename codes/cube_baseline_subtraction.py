@@ -291,7 +291,7 @@ if __name__ == "__main__":
                 smooth_kernel = None
             window, edges = jcmt_window(cube, nbin=nbin, clips=clips, smooth_kernel=smooth_kernel, bin_expand= bin_expand)
             comment = comment + f"Window is automatically defined with nbin of {nbin}, clipping with {clips} and tophat smoothed with kernel size {smooth_kernel} prior to windowing."
-    fitting_method = int(input("Input method (1) fixed poly (2) iterative poly (3) spline: "))
+    fitting_method = int(input("Input Baseline Fitting method (1) fixed poly (2) iterative poly (3) spline: "))
     match fitting_method:
         case 1:
             poly_order = int(input("Input poly order: "))
@@ -302,7 +302,7 @@ if __name__ == "__main__":
             corrected, baseline = baseline_iterative_poly(cube, window, max_order)
             comment = comment + f"The baseline is fitted with polynomial function with automatically selected order, until order {max_order}. "
         case 3:
-            knot_start = int(input("Input knot starting channel:"))
+            knot_start = int(input("Input interior knot starting channel:"))
             knot_spacing = int(input("Input knot spacing in channels:"))
             edge_channels = int(input("Input edge averaging channels [30]: ") or 30)
             corrected, baseline = baseline_spline(cube, window, knot_start = knot_start, knot_spacing = knot_spacing, edge_channels = edge_channels)

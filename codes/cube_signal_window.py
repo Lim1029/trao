@@ -19,7 +19,7 @@ from codes.utils.cube_smooth_tophat import TopHat_3DFilter
 from scipy.ndimage import gaussian_filter1d, binary_dilation
 
 # matplotlib configuration'
-#plt.style.use('./codes/astro.mplstyle')
+plt.style.use('./codes/astro.mplstyle')
 plt.rcParams['figure.figsize'] = (1920/162, 1080/162)
 
 ############################ cube operation ############################
@@ -92,15 +92,14 @@ def jcmt_window(cube, nbin=30, clips=[2,2.5,3], plot_progress=None, avg_mode='me
             binned = [np.mean(spec[edges[i]:edges[i+1]]) for i in range(nbin)]
             binned = np.array(binned, dtype=float)
             
-            clipped_binned = binned.copy()
             # iteratively calculate mean and standard deviation of binned means and mask out outliers 
             for clip in clips:
                 if avg_mode == 'mean':
-                    avg = np.nanmean(clipped_binned)
+                    avg = np.nanmean(binned)
                 elif avg_mode == 'median':
-                    avg = np.nanmedian(clipped_binned)
+                    avg = np.nanmedian(binned)
                 std = np.nanstd(binned)
-                clipped_binned = np.where(clipped_binned > avg+clip*std, np.nan, binned)
+                binned = np.where(binned > avg+clip*std, np.nan, binned)
                 
                 # we can plot and see
                 if plot_progress:
@@ -119,7 +118,7 @@ def jcmt_window(cube, nbin=30, clips=[2,2.5,3], plot_progress=None, avg_mode='me
                     plt.axhline(avg+clip*std, linewidth=1, color='red')
                     plt.show()
                 
-            mask_binned = ~np.isnan(clipped_binned)
+            mask_binned = ~np.isnan(binned)
             mask_binned_old = mask_binned.copy()
             # protect the emission wings, by assigning true to the neighour
             
@@ -159,7 +158,7 @@ def jcmt_window(cube, nbin=30, clips=[2,2.5,3], plot_progress=None, avg_mode='me
         window_i = window[:, iy, ix]
         ax.step(vel, spec)
         ax.step(vel, window_i)
-        ax.set_title(f"({iy},{ix})", fontsize=8)
+        ax.set_title(f"(x ={ix},y={iy})", fontsize=8)
     
     plt.show()
     
