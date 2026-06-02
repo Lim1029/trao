@@ -86,6 +86,10 @@ In this method for every pixel a single fixed order(user defined) polynomial is 
 
 Then the baseline model is subtracted from the raw spectra for each pixel.
 
+parameters: 
+
+    poly_order ( polynomial order to fit baseline )
+
 ### Iterative Polynomial 
 
 For this method for each pixel we take the following steps
@@ -98,6 +102,12 @@ For this method for each pixel we take the following steps
 
 An upper limit to the polynomial order is required to define first.
 
+parameters :
+
+    max_order ( maximum order for iteration )
+
+For AIC this note can be reffered : [AIC_statistics.pdf](https://github.com/user-attachments/files/28490685/AIC_statistics.pdf)
+
 
 ### Spline Fit
 
@@ -108,6 +118,9 @@ parameters
     edge_channels ( number of edge channels to take a mean or median to get a straight line to replece the emission part. )
 
 For an illustration of how these parameters affect the spline fitting, refer to [spline_illustration](https://github.com/vinay-ydv19/w43-doc/blob/main/Spline_Baseline.pdf)
+
+short illustration to understand how individual splines are constructed between knots, and summed to produce the baseline [Making sense of B spline.pdf](https://github.com/user-attachments/files/28490718/Making.sense.of.B.spline.pdf)
+
 
 ## How to Run 
 
