@@ -151,6 +151,8 @@ plotting code
 we have two option for plotting either all the pixels can be averaged or pixels with above certain SNR threshold can be averaged.
 
 example of average plot
+
+
 <img width="800" height="450" alt="w40_c18o_spline" src="https://github.com/user-attachments/assets/b9a7d2dc-bd3b-411f-bcf5-b3db357a70a3" />
 
 
