@@ -107,7 +107,7 @@ parameters
     knot_spacing ( channel spacing between 2 knots )
     edge_channels ( number of edge channels to take a mean or median to get a straight line to replece the emission part. )
 
-For an illustration of how these parameters affect the spline fitting, refer to [Spline_Baseline.pdf](https://github.com/user-attachments/files/28490142/Spline_Baseline.pdf).
+For an illustration of how these parameters affect the spline fitting, refer to [spline_illustration](https://github.com/vinay-ydv19/w43/blob/main/doc/Spline_Baseline.pdf)
 
 ## How to Run 
 
