@@ -9,7 +9,7 @@ The overall workflow for the baseline subtraction can be understood by this flow
 
 <img width="600" height="900" alt="base_flow" src="https://github.com/user-attachments/assets/192e80ce-16ee-4e6c-b372-3e3c63a2413e" />
 
-## Preprocessing the Cube
+##  # Preprocessing the Cube
 
 ### Trimming 
 
@@ -29,7 +29,7 @@ Parameters :
       target_reso ( Resolution to which to smooth the spectra)
 
 
-## Masking Methods
+##  # Masking Methods
 
 There are three option in present pipeline for masking 
 
@@ -72,7 +72,7 @@ parameters:
     bin_expand ( number of neighbouring bins to expand to consider as emission)
     
 
-## Baseline Fitting methods
+## # Baseline Fitting methods
 
 So for the baseline fitting we also have three methods for now 
 
@@ -124,7 +124,7 @@ For an illustration of how these parameters affect the spline fitting, refer to 
 short illustration to understand how individual splines are constructed between knots, and summed to produce the baseline [Making sense of B spline.pdf](https://github.com/user-attachments/files/28490718/Making.sense.of.B.spline.pdf)
 
 
-## Output FITS File
+## # Output FITS File
 
 Primary HDU:
     Baseline-subtracted cube
@@ -139,7 +139,22 @@ MASK:
     Spectral mask used during fitting
 
 
-## How to Run 
+
+## Optional Visualization
+
+After baseline subtraction the average spectra can be plotted to visualise the result. 
+
+plotting code 
+
+    codes/utils/average_plotting.py
+
+we have two option for plotting either all the pixels can be averaged or pixels with above certain SNR threshold can be averaged.
+
+example of average plot
+<img width="800" height="450" alt="w40_c18o_spline" src="https://github.com/user-attachments/assets/b9a7d2dc-bd3b-411f-bcf5-b3db357a70a3" />
+
+
+## # How to Run 
 
 To perform baseline subtraction this terminal command can be used 
 
