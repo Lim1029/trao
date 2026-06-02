@@ -153,7 +153,11 @@ we have two option for plotting either all the pixels can be averaged or pixels 
 example of average plot
 
 
-<img width="800" height="450" alt="w40_c18o_spline" src="https://github.com/user-attachments/assets/b9a7d2dc-bd3b-411f-bcf5-b3db357a70a3" />
+<img width="400" height="230" alt="w40_c18o_spline" src="https://github.com/user-attachments/assets/b9a7d2dc-bd3b-411f-bcf5-b3db357a70a3" />
+
+
+The average masking for each channel ( yellow shaded part ) is illustrated here: [Masking_demo](https://github.com/user-attachments/files/28498621/Masking_method.pdf)
+
 
 
 ## # How to Run 
