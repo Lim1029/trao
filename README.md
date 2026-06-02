@@ -124,6 +124,27 @@ For an illustration of how these parameters affect the spline fitting, refer to 
 short illustration to understand how individual splines are constructed between knots, and summed to produce the baseline [Making sense of B spline.pdf](https://github.com/user-attachments/files/28490718/Making.sense.of.B.spline.pdf)
 
 
+
+## # Optional Visualization
+
+After baseline subtraction the average spectra can be plotted to visualise the result. 
+
+plotting code 
+
+    codes/utils/average_plotting.py
+
+we have two option for plotting either all the pixels can be averaged or pixels with above certain SNR threshold can be averaged.
+
+example of average plot
+
+
+<img width="600" height="330" alt="w40_c18o_spline" src="https://github.com/user-attachments/assets/b9a7d2dc-bd3b-411f-bcf5-b3db357a70a3" />
+
+
+
+The average masking for each channel ( yellow shaded part ) is illustrated here: [Masking_demo](https://github.com/user-attachments/files/28498621/Masking_method.pdf)
+
+
 ## # Output FITS File
 
 Primary HDU:
@@ -137,26 +158,6 @@ UN-BASELINED:
 
 MASK:
     Spectral mask used during fitting
-
-
-
-## Optional Visualization
-
-After baseline subtraction the average spectra can be plotted to visualise the result. 
-
-plotting code 
-
-    codes/utils/average_plotting.py
-
-we have two option for plotting either all the pixels can be averaged or pixels with above certain SNR threshold can be averaged.
-
-example of average plot
-
-
-<img width="400" height="230" alt="w40_c18o_spline" src="https://github.com/user-attachments/assets/b9a7d2dc-bd3b-411f-bcf5-b3db357a70a3" />
-
-
-The average masking for each channel ( yellow shaded part ) is illustrated here: [Masking_demo](https://github.com/user-attachments/files/28498621/Masking_method.pdf)
 
 
 
