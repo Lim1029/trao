@@ -151,35 +151,50 @@ To perform baseline subtraction this terminal command can be used
     Input full/relative path to cube fits: 
             /home/vinay/narit/w43/fits/trao/w43_c18o_mos.fits
 
-    Input vmin and vmax in km/s separated by ',' to trim the cube (0 to skip trimming): 20,150
+    Input vmin and vmax in km/s separated by ',' to trim the cube (0 to skip trimming):
+            20,150
     
-    Input target resolution (km/s) to perform smoothing prior to baseline fitting (0 to skip): 0
+    Input target resolution (km/s) to perform smoothing prior to baseline fitting (0 to skip):
+            0
 
-    How to define spectral window? (1) no window (2) user-defined (3) automatic: 3
+    How to define spectral window? (1) no window (2) user-defined (3) automatic: 
+            3
 
-    Input nbin, to divide 3121 channels: 40
+    Input nbin, to divide 3121 channels: 
+            40
 
-    Input clip (in unit of sigma) separated by ',':  1.5,2,2.5
+    Input clip (in unit of sigma) separated by ',':  
+            1.5,2,2.5
     
-    tophat smooth cube prior to windowing? (enter kernel size v,y,x or 0 to skip): 5,5,5
+    tophat smooth cube prior to windowing? (enter kernel size v,y,x or 0 to skip): 
+            5,5,5
 
-    Number of neighboring bin each side to mask as emission to protect wings: 2
+    Number of neighboring bin each side to mask as emission to protect wings: 
+            2
 
-    Input Baseline Fitting method: (1) fixed poly (2) iterative poly (3) spline: 3
+    Input Baseline Fitting method: (1) fixed poly (2) iterative poly (3) spline: 
+            3
 
-    Input interior knot starting channel: 200
+    Input interior knot starting channel: 
+            200
 
-    Input knot spacing in channels: 200
+    Input knot spacing in channels: 
+            200
 
-    Input edge averaging channels: 50
+    Input edge averaging channels: 
+            50
 
-    Visualise baseline fitting? (y/n): y
+    Visualise baseline fitting? (y/n): 
+            y
 
-    Enter SNR threshold for cube masking (0 to skip): 0
+    Enter SNR threshold for cube masking (0 to skip): 
+            0
 
-    Save this plot? (y/n): n
+    Save this plot? (y/n): 
+            n
 
-    input the output path: /home/vinay/narit/w43/fits/trao/base/spline/c18o.fits
+    input the output path: 
+            /home/vinay/narit/w43/fits/trao/base/spline/c18o.fits
     
     
     
