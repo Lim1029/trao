@@ -3,9 +3,9 @@
 
 The cube_baseline_subtraction is being run as a module here from the directory which contains codes/cube_baseline_subtraction.py
 
-Here is the discription about the method we are using for the baseline subtraction.
+Here is the description about the method we are using for the baseline subtraction.
 
-The overall workflow for the baseline subtration can be understood by this flowchart
+The overall workflow for the baseline subtraction can be understood by this flowchart
 
 <img width="600" height="900" alt="base_flow" src="https://github.com/user-attachments/assets/192e80ce-16ee-4e6c-b372-3e3c63a2413e" />
 
@@ -17,7 +17,7 @@ Optionally the the spectral cube can be trimmed to a velocity range to remove th
 
 Parameters : 
 
-    vmin ( minimum velcoity limit)
+    vmin ( minimum velocity limit)
     vmax ( upper velocity limit)
 
 ### Smoothing
@@ -98,7 +98,7 @@ For this method for each pixel we take the following steps
     fit the baseline and compute AIC (Akaike information criterion ) which indicate the goodness of fit
     then increase the order by 1 and compute AIC again 
     the iteration stop when the AIC starts to get worse.
-    the order with lowest AIC is choosen to fit the baseline and subtracted from the spectra 
+    the order with lowest AIC is chosen to fit the baseline and subtracted from the spectra 
 
 An upper limit to the polynomial order is required to define first.
 
@@ -106,20 +106,37 @@ parameters :
 
     max_order ( maximum order for iteration )
 
-For AIC this note can be reffered : [AIC_statistics.pdf](https://github.com/user-attachments/files/28490685/AIC_statistics.pdf)
+For AIC this note can be referred : [AIC_statistics.pdf](https://github.com/user-attachments/files/28490685/AIC_statistics.pdf)
 
 
 ### Spline Fit
 
+By default order 3 ( cubic spline ) is used.
+
 parameters
 
-    knot_start ( First channel to assign as knot point)
+    knot_start ( channel index from where the interior knot begins)
     knot_spacing ( channel spacing between 2 knots )
-    edge_channels ( number of edge channels to take a mean or median to get a straight line to replece the emission part. )
+    edge_channels ( number of edge channels to take a mean or median to get a straight line to replace the emission part. )
 
 For an illustration of how these parameters affect the spline fitting, refer to [spline_illustration](https://github.com/vinay-ydv19/w43-doc/blob/main/Spline_Baseline.pdf)
 
 short illustration to understand how individual splines are constructed between knots, and summed to produce the baseline [Making sense of B spline.pdf](https://github.com/user-attachments/files/28490718/Making.sense.of.B.spline.pdf)
+
+
+## Output FITS File
+
+Primary HDU:
+    Baseline-subtracted cube
+
+BASELINE:
+    Fitted baseline model
+
+UN-BASELINED:
+    Original cube before subtraction
+
+MASK:
+    Spectral mask used during fitting
 
 
 ## How to Run 
@@ -131,7 +148,8 @@ To perform baseline subtraction this terminal command can be used
 
 ## Example
 
-    Input full/relative path to cube fits: /home/vinay/narit/w43/fits/trao/w43_c18o_mos.fits
+    Input full/relative path to cube fits: 
+            /home/vinay/narit/w43/fits/trao/w43_c18o_mos.fits
 
     Input vmin and vmax in km/s separated by ',' to trim the cube (0 to skip trimming): 20,150
     
