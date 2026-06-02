@@ -12,11 +12,11 @@ u.add_enabled_units(u.def_unit(['K (Tmb)'], represents=u.K))
 u.add_enabled_units(u.def_unit(["K (Ta*)"], represents=u.K))
 # cube = SpectralCube.read(args.input_cube_path)
 # D:/NaritNextcloud/NARIT_RA/carta/TRAO/fits_files/w43
-from utils import cube_spectral_smooth
+from codes.utils import cube_spectral_smooth
 from pybaselines import Baseline
 import sys 
 from astropy.io import fits
-from cube_signal_window import jcmt_window
+from codes.cube_signal_window import jcmt_window
 import matplotlib.colors as mcolors
 from scipy.interpolate import interp1d
 from scipy.interpolate import make_splrep, make_lsq_spline
