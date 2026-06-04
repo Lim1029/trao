@@ -1,6 +1,5 @@
-#just to check
 # this code explores different methods of performing baseline subtraction of a cube
-# last update: 7 April 2026
+# last update: 8 May 2026
 
 # from useful_functions import baseline_cube
 from spectral_cube import SpectralCube, BooleanArrayMask
@@ -12,7 +11,10 @@ u.add_enabled_units(u.def_unit(['K (Tmb)'], represents=u.K))
 u.add_enabled_units(u.def_unit(["K (Ta*)"], represents=u.K))
 # cube = SpectralCube.read(args.input_cube_path)
 # D:/NaritNextcloud/NARIT_RA/carta/TRAO/fits_files/w43
-from codes.utils import cube_spectral_smooth
+from codes.utils.cube_spectral_smooth import cube_spectral_smooth
+from codes.utils.average_plotting import average_plotting
+from codes.utils.cube_mask import cube_mask
+from codes.utils.spectrum_smooth import spectrum_smooth
 from pybaselines import Baseline
 import sys 
 from astropy.io import fits
@@ -174,7 +176,7 @@ def baseline_iterative_poly(cube, window, max_order, smooth_vel=0.3):
     return corrected_cube, baseline_cube
     
 # reference: https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.make_splrep.html#scipy.interpolate.make_splrep    
-def baseline_spline(cube, window,knot_start= 100, knot_spacing = 100, k=3):
+def baseline_spline(cube, window, knot_start= 200, knot_spacing = 200, k=3, edge_channels=30):
     x = cube.spectral_axis.value
     data = cube.unmasked_data[:].value # (nspec, ny, nx)
     mask_arr = window
@@ -187,13 +189,42 @@ def baseline_spline(cube, window,knot_start= 100, knot_spacing = 100, k=3):
             y = np.nan_to_num(y)
             mask = mask_arr[:,j,i]
             mask = mask.ravel()
-            # make knots (t) every 100 channels, and at the boundary, but skip the emission window
-            t = x[np.where(mask==1)][knot_start:-1:knot_spacing]
-            t = np.r_[(x[0],)*4,t,(x[-1],)*4]       
+            y_new = y.copy()
+            
+            mask_region = (mask == 0)
+    
+            if np.any(mask_region):
+
+                idx = np.where(mask_region)[0]
+
+                # split into separate contiguous regions
+                regions = np.split(idx, np.where(np.diff(idx) != 1)[0] + 1)
+
+                for region in regions:
+
+                    left = region[0] - 1
+                    right = region[-1] + 1
+
+                    if left >= edge_channels and right < len(x)-edge_channels:
+
+                        left_val = np.nanmean(y[left-edge_channels:left])
+                        right_val = np.nanmean(y[right:right+edge_channels])
+
+                        y_new[region] = np.interp(
+                                x[region],
+                                [x[left], x[right]],
+                                [left_val, right_val]
+                        )  
+            # make knots (t) every N channels, and at the boundary, but skip the emission window
+            
+            t = x[knot_start:-1:knot_spacing]
+            #t = x[np.where(mask==1)][knot_start:-1:knot_spacing]
+            t = np.r_[(x[0],)*(k+1),t,(x[-1],)*(k+1)]       
 
             # breakpoint()
             try:
-                spl = make_lsq_spline(x, y, t, k, w=mask)
+                #spl = make_lsq_spline(x, y, t, k, w=mask)
+                spl = make_lsq_spline(x, y_new, t, k)
             except:
                 breakpoint()
             baseline = spl(x)
@@ -221,7 +252,8 @@ def no_window(cube):
     x = cube.spectral_axis.value
     total_window = np.full(len(x), True)
     window = np.broadcast_to(total_window[:, None, None], cube.shape).astype(int)
-    return window        
+    return window  
+    
     
 if __name__ == "__main__":
     comment = 'During the baseline subtraction process, '
@@ -252,13 +284,14 @@ if __name__ == "__main__":
             clips = input("Input clip (in unit of sigma) separated by , (e.g., 2,2.5,3): ")
             clips = list(map(float,clips.split(',')))
             smooth_kernel = input("tophat smooth cube prior to windowing? (enter kernel size v,y,x or 0 to skip): ")
+            bin_expand = int(input("Number of neighboring bin each side to mask as emission to protect wings (default 1): "))
             if smooth_kernel != '0':
                 smooth_kernel = list(map(int,smooth_kernel.split(',')))
             else:
                 smooth_kernel = None
-            window, edges = jcmt_window(cube, nbin=nbin, clips=clips, smooth_kernel=smooth_kernel)
+            window, edges = jcmt_window(cube, nbin=nbin, clips=clips, smooth_kernel=smooth_kernel, bin_expand= bin_expand)
             comment = comment + f"Window is automatically defined with nbin of {nbin}, clipping with {clips} and tophat smoothed with kernel size {smooth_kernel} prior to windowing."
-    fitting_method = int(input("Input method (1) fixed poly (2) iterative poly (3) spline: "))
+    fitting_method = int(input("Input Baseline Fitting method (1) fixed poly (2) iterative poly (3) spline: "))
     match fitting_method:
         case 1:
             poly_order = int(input("Input poly order: "))
@@ -269,15 +302,33 @@ if __name__ == "__main__":
             corrected, baseline = baseline_iterative_poly(cube, window, max_order)
             comment = comment + f"The baseline is fitted with polynomial function with automatically selected order, until order {max_order}. "
         case 3:
-            knot_start = int(input("Input knot starting channel:"))
+            knot_start = int(input("Input interior knot starting channel:"))
             knot_spacing = int(input("Input knot spacing in channels:"))
-            corrected, baseline = baseline_spline(cube, window, knot_start = knot_start, knot_spacing = knot_spacing)
+            edge_channels = int(input("Input edge averaging channels [30]: ") or 30)
+            corrected, baseline = baseline_spline(cube, window, knot_start = knot_start, knot_spacing = knot_spacing, edge_channels = edge_channels)
             comment = comment + f"The baseline is fitted with cube spline function."
         
         case _:
             print('Nothing is done')
             sys.exit(0)
             
+            
+    # visualising the baseline fitting
+    show_plot = input(
+        "Visualise baseline fitting? (y/n): "
+    ).strip().lower()
+
+    if show_plot == 'y':
+        
+        snr_threshold = float(input("Enter SNR threshold for cube masking (0 to skip): "))
+
+        average_plotting(
+            cube,
+            corrected=corrected,
+            window=window,
+            baseline=baseline,
+            snr_threshold=snr_threshold
+        )       
     # saving results by creating a file with multiple hdu
     output_path = input("input the output path: ")
     primary_header = cube.header

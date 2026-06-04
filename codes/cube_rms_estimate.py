@@ -48,6 +48,7 @@ def rms_negative(cube):
     mean_rms = np.nanmean(rms_map)
     max_rms = np.nanmax(rms_map)
     print(f'Maximum rms: {max_rms}')
+    print(f'Mean rms: {mean_rms}')
     return rms_map, mean_rms
     
 # this code has an issue where it doesn't work on data with nan values like CII    
