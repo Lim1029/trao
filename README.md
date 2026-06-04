@@ -1,7 +1,7 @@
 # Baseline Method
 
 
-The cube_baseline_subtraction is being run as a module here from the directory which contains codes/cube_baseline_subtraction.py
+The cube_baseline_subtraction is being run as a module here from the directory which contains ['codes/cube_baseline_subtraction.py'](codes/cube_baseline_subtraction.py)
 
 Here is the description about the method we are using for the baseline subtraction.
 
@@ -17,8 +17,10 @@ Optionally the the spectral cube can be trimmed to a velocity range to remove th
 
 Parameters : 
 
-    vmin ( minimum velocity limit)
-    vmax ( upper velocity limit)
+    vmin (minimum velocity limit)
+    vmax (upper velocity limit)
+
+Typically, one would decide the velocity range by examining the average spectrum using a cube visualization tool (e.g., CARTA, ds9)  
 
 ### Smoothing
 
@@ -26,8 +28,9 @@ And also the spectra can be smoothed to desired resolution to get better snr for
 
 Parameters :
 
-      target_reso ( Resolution to which to smooth the spectra)
+    target_reso (Resolution to which to smooth the spectra)
 
+This is, by default, not executed, to retain the original spectral resolution of the data.  
 
 ## # Masking Methods
 
@@ -66,58 +69,58 @@ The working of this method can be understood by this [illustration](https://lim1
 
 parameters:
 
-    nbin ( number of bins to divide the channels )
-    clips ( sigma levels to estimate the threshold to identify the emission bins (currently we are using three iterations)
-    smooth_kernel ( used for 3D smoothing the cube ) 
-    bin_expand ( number of neighbouring bins to expand to consider as emission)
+    nbin (number of bins to divide the channels)
+    clips (sigma levels to estimate the threshold to identify the emission bins (currently we are using three iterations)
+    smooth_kernel (used for 3D smoothing the cube) 
+    bin_expand (number of neighbouring bins to expand to consider as emission)
     
 
 ## # Baseline Fitting methods
 
 So for the baseline fitting we also have three methods for now 
 
-    1. Fixed polynomial
+    1. Fixed Polynomial
     2. Iterative Polynomial
     3. Spline Fit
 
 ### 1. Fixed Polynomial
 
-In this method for every pixel a single fixed order(user defined) polynomial is used to fit the baseline in the part defined as baseline by the mask created in the above step.
+In this method, for every pixel, a single fixed order (user defined) polynomial is used to fit the baseline in the part defined as baseline by the mask created in the above step.
 
-Then the baseline model is subtracted from the raw spectra for each pixel.
+Then the baseline model is subtracted from the raw spectrum.
 
 parameters: 
 
-    poly_order ( polynomial order to fit baseline )
+    poly_order (polynomial order to fit baseline)
 
 ### 2. Iterative Polynomial 
 
-For this method for each pixel we take the following steps
+For this method, for each pixel, we take the following steps
     
     we start with poly order = 0
-    fit the baseline and compute AIC (Akaike information criterion ) which indicate the goodness of fit
-    then increase the order by 1 and compute AIC again 
-    the iteration stop when the AIC starts to get worse.
-    the order with lowest AIC is chosen to fit the baseline and subtracted from the spectra 
+    fit the baseline and compute AIC (Akaike information criterion) which indicate the goodness of fit
+    then increase the order by 1, fit the baseline, and compute AIC again 
+    the iteration stops when the AIC starts to get worse.
+    the order with lowest AIC is chosen to fit the baseline and subtracted from the spectrum 
 
 An upper limit to the polynomial order is required to define first.
 
 parameters :
 
-    max_order ( maximum order for iteration )
+    max_order (maximum order for iteration)
 
 For AIC this note can be referred : [AIC_statistics.pdf](https://github.com/user-attachments/files/28490685/AIC_statistics.pdf)
 
 
 ### 3. Spline Fit
 
-By default order 3 ( cubic spline ) is used.
+By default order 3 (cubic spline) is used.
 
 parameters
 
-    knot_start ( channel index from where the interior knot begins)
-    knot_spacing ( channel spacing between 2 knots )
-    edge_channels ( number of edge channels to take a mean or median to get a straight line to replace the emission part. )
+    knot_start (channel index from where the interior knot begins)
+    knot_spacing (channel spacing between 2 knots )
+    edge_channels (number of edge channels to take a mean or median to get a straight line to replace the emission part.)
 
 For an illustration of how these parameters affect the spline fitting, refer to [spline_illustration](https://github.com/vinay-ydv19/w43-doc/blob/main/Spline_Baseline.pdf)
 
@@ -127,22 +130,24 @@ short illustration to understand how individual splines are constructed between 
 
 ## # Optional Visualization
 
-After baseline subtraction the average spectra can be plotted to visualise the result. 
+After baseline subtraction, the average spectrum can be plotted to visualise the result. 
 
 plotting code 
 
     codes/utils/average_plotting.py
 
-we have two option for plotting either all the pixels can be averaged or pixels with above certain SNR threshold can be averaged.
+we have two option for plotting: 1) either all the pixels can be averaged or 2) pixels with above certain SNR threshold can be averaged.
 
-example of average plot
+Option 2) is useful when visualising a cube which has low SNR spectra (e.g., CN, C2H lines) or a cube which has few pixels containing emissions. 
+
+An example of average plot
 
 
 <img width="600" height="330" alt="w40_c18o_spline" src="https://github.com/user-attachments/assets/b9a7d2dc-bd3b-411f-bcf5-b3db357a70a3" />
 
 
 
-The average masking for each channel ( yellow shaded part ) is illustrated here: [Masking_demo](https://github.com/user-attachments/files/28498621/Masking_method.pdf)
+The average masking for each channel (yellow shaded part) is illustrated here: [Masking_demo](https://github.com/user-attachments/files/28498621/Masking_method.pdf)
 
 
 ## # Output FITS File
@@ -167,6 +172,7 @@ To perform baseline subtraction this terminal command can be used
 
     python -m codes.cube_baseline_subtraction
 
+The code will then interactively ask for user inputs. An example routine with appropriate parameters is shown below:
 
 ## Example
 
