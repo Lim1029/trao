@@ -12,8 +12,8 @@ plt.rcParams['figure.dpi'] = 162
 
 # class CubeNoise:
 # def __init__(self, cube):
-    # self.cube = cube
-    
+# self.cube = cube
+
 def cube_trim(cube, vmin, vmax):
     cube = cube.spectral_slab(vmin*u.km/u.s, vmax*u.km/u.s)
     return cube
@@ -93,12 +93,24 @@ if __name__ == "__main__":
         print(f'Mean rms noise: {mean_rms:.2f} K')
         # vmin = np.nanpercentile(rms_map,10)
         # vmax = np.nanpercentile(rms_map,100)
-        percentile = float(input("Enter percentile to clip:"))
+        percentile = float(input("Enter percentile to clip: "))
         vmax = np.nanpercentile(rms_map,percentile)
-        # vmax = 1.2
         # print(vmax)
-        plt.imshow(rms_map, origin='lower', vmax=vmax)
-        plt.colorbar(label=cube.header['BUNIT'])
+        fig = plt.figure()  
+
+        axis_format = input('format the axes in pixel or world coordinates?: ')
+    
+        if axis_format == 'world':
+            wcs = cube.wcs.celestial
+            ax = fig.add_subplot(111, projection=wcs)
+        elif axis_format == 'pixel':
+            ax = fig.add_subplot(111)
+        else:
+            print('unrecognised input, default to pixel coordinates')
+            ax = fig.add_subplot(111)
+        
+        im = ax.imshow(rms_map, origin='lower', vmax=vmax)
+        plt.colorbar(im, ax=ax, label=cube.header['BUNIT'])
     elif option == 3:
         hist, bin_edges, bin_centers, popt = rms_histogram(cube)
         amp, mean, sigma = popt
@@ -113,4 +125,19 @@ if __name__ == "__main__":
         plt.ylabel('Count')
         plt.xlabel('T (K)')
         
+<<<<<<< Updated upstream
     plt.show()
+=======
+    title = input('customise title? enter to skip: ')
+    if title == '':
+        ax.set_title('SNR Map')
+    else:
+        ax.set_title(title)
+    plt.show()
+    save_path = input('save the figure? type the path, or enter to skip: ')
+    if save_path != '':
+        fig.savefig(save_path, dpi=150, bbox_inches='tight', pad_inches=0)
+        print(f'figure saved to {save_path}')
+    else:
+        print(f'figure not saved') 
+>>>>>>> Stashed changes
