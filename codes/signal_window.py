@@ -1,6 +1,9 @@
 
 # this code identifies signal window of a spectral cube, and save it as a hdu
 # last update: 17 july 2026
+# In this code the spectra is first smoothed with a kernal of [5,5,5] with 
+# boxcar smoothing then for the clipping part iteratively (3 itereation) clips of 
+# [3,3,3] is used. for the binnig the binsize is fixed to 5 km/s.
 
 # from useful_functions import baseline_cube
 from spectral_cube import SpectralCube, BooleanArrayMask
