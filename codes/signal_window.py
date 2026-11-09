@@ -62,7 +62,7 @@ def jcmt_window_test(cube, avg_mode='mean'):
     #Calculate how many bins fit into the total channels
     nbin = nv // bin_size
 
-    print('Number of bins: ', nbin)
+    print('Initial Number of bins: ', nbin)
 
     remainder = nv % bin_size 
     

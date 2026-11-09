@@ -19,6 +19,7 @@ from pybaselines import Baseline
 import sys 
 from astropy.io import fits
 from codes.cube_signal_window import jcmt_window
+from codes.shrinking_bin_window import jcmt_window_test
 import matplotlib.colors as mcolors
 from scipy.interpolate import interp1d
 from scipy.interpolate import make_splrep, make_lsq_spline
@@ -269,7 +270,7 @@ if __name__ == "__main__":
     if target_reso != 0:
         cube = cube_smooth(cube, target_reso=target_reso)
         comment = comment + f"The cube is smoothed spectrally to {target_reso} km/s. "
-    window_method = int(input("How to define spectral window? (1) no window (2) user-defined (3) automatic: "))
+    window_method = int(input("How to define spectral window? (1) no window (2) user-defined (3) automatic (4) automatic with iterative bin: "))
     match window_method:
         case 1:
             window = no_window(cube)
@@ -291,6 +292,11 @@ if __name__ == "__main__":
                 smooth_kernel = None
             window, edges = jcmt_window(cube, nbin=nbin, clips=clips, smooth_kernel=smooth_kernel, bin_expand= bin_expand)
             comment = comment + f"Window is automatically defined with nbin of {nbin}, clipping with {clips} and tophat smoothed with kernel size {smooth_kernel} prior to windowing."
+            
+        case 4: 
+            
+            window, nbin, clips, smooth_kernel = jcmt_window_test(cube)
+            omment = comment + f"Window is automatically defined with nbin of {nbin}, clipping with {clips} and tophat smoothed with kernel size {smooth_kernel} prior to windowing."
     fitting_method = int(input("Input Baseline Fitting method (1) fixed poly (2) iterative poly (3) spline: "))
     match fitting_method:
         case 1:
