@@ -125,9 +125,7 @@ if __name__ == "__main__":
         plt.ylabel('Count')
         plt.xlabel('T (K)')
         
-<<<<<<< Updated upstream
     plt.show()
-=======
     title = input('customise title? enter to skip: ')
     if title == '':
         ax.set_title('SNR Map')
@@ -140,4 +138,3 @@ if __name__ == "__main__":
         print(f'figure saved to {save_path}')
     else:
         print(f'figure not saved') 
->>>>>>> Stashed changes

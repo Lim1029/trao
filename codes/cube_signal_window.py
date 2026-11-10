@@ -63,23 +63,101 @@ def jcmt_window_spectrum(v,spec,nbin=20, clips=[2,2.5,3], avg_mode='mean'):
     mask_full = np.array(mask_full)
     return mask_full
 
+
+def browse_profiles(data, vel, window=None, nrows=3, ncols=3, descending=True, window_on_twin_axis=True):
+
+    nperp = nrows * ncols
+
+    # ---- sort every pixel by its peak value -------------------------------
+    cube_max = np.nanmax(data, axis=0)              # (ny, nx)
+    flat_max = cube_max.ravel()
+    order    = np.argsort(flat_max)                 # ascending
+    order    = order[np.isfinite(flat_max[order])]  # drop NaN pixels
+    if descending:
+        order = order[::-1]                         # strongest first
+    iy_all, ix_all = np.unravel_index(order, cube_max.shape)
+
+    nspec = order.size
+    npages = max(1, int(np.ceil(nspec / nperp)))
+    state = {'page': 0}
+
+    # ---- figure -----------------------------------------------------------
+    fig, axes = plt.subplots(nrows, ncols, figsize=(12, 8), squeeze=False)
+    axes = axes.flatten()
+    fig.subplots_adjust(hspace=0.5, wspace=0.3)
+    twins = [None] * nperp
+
+    def draw(page):
+        page = int(np.clip(page, 0, npages - 1))
+        state['page'] = page
+        start = page * nperp
+        stop  = min(start + nperp, nspec)
+
+        for k, ax in enumerate(axes):
+            j = start + k
+            ax.clear()
+            if twins[k] is not None:
+                twins[k].remove(); twins[k] = None
+            if j >= stop:                      # nothing left on this page
+                ax.set_visible(False)
+                continue
+            ax.set_visible(True)
+
+            iy, ix = iy_all[j], ix_all[j]
+            ax.step(vel, data[:, iy, ix], where='mid', lw=0.9, color='C0')
+
+            if window is not None:
+                w = np.asarray(window[:, iy, ix])
+                if window_on_twin_axis:
+                    ax2 = ax.twinx()
+                    ax2.step(vel, w, where='mid', lw=0.8,
+                             color='C1', alpha=0.7)
+                    ax2.tick_params(labelsize=6, colors='C1')
+                    twins[k] = ax2
+                else:
+                    ax.step(vel, w, where='mid', lw=0.8,
+                            color='C1', alpha=0.7)
+
+            ax.set_title(f"x={ix}, y={iy}  |  peak={flat_max[order[j]]:.3g}",
+                         fontsize=8)
+            ax.tick_params(labelsize=7)
+
+        fig.suptitle(
+            f"{'strongest → weakest' if descending else 'weakest → strongest'}   "
+            f"page {page+1}/{npages}   "
+            f"(profiles {start+1}–{stop} of {nspec})\n"
+            "[n]ext  [p]rev  [home]first  [end]last  [s]ave  [q]uit",
+            fontsize=9)
+        fig.canvas.draw_idle()
+
+    def on_key(event):
+        key = (event.key or '').lower()
+        if   key in ('n', 'right'): draw(state['page'] + 1)
+        elif key in ('p', 'left'):  draw(state['page'] - 1)
+        elif key == 'home':         draw(0)
+        elif key == 'end':          draw(npages - 1)
+        elif key == 's':
+            fig.savefig(f"profiles_page_{state['page']+1:03d}.png", dpi=150)
+        elif key in ('q', 'escape'):
+            plt.close(fig)
+
+    fig.canvas.mpl_connect('key_press_event', on_key)
+    draw(0)
+    plt.show()
+    return fig
+
+
 def jcmt_window(cube, nbin=30, clips=[2,2.5,3], plot_progress=None, avg_mode='mean', smooth_kernel=None, bin_expand=1):
     data = cube.filled_data[:].value # (nspec, ny, nx)
-    # for weak low SNR emission, we may want to smooth first
-    if smooth_kernel != None:
+    if smooth_kernel != None:   # for weak low SNR emission, we may want to smooth first
         data = TopHat_3DFilter(data, smooth_kernel)
     window = np.full(data.shape, np.nan)
-    #vel = cube.spectral_axis.value
     vel = cube.spectral_axis.to(u.km/u.s).value
-    # define the binning edges
-    nv, ny, nx = data.shape
+    nv, ny, nx = data.shape # define the binning edges
     bin_size = nv // nbin
-    # we will get remainder if the choice of nbin is not divisible by nv
-    remainder = nv % nbin 
-    # define the [) inclusive exclusive edges of bins
-    edges = [i * bin_size for i in range(nbin+1)]
-    # if have remainder, we put them in the last bin
-    if remainder != 0:
+    remainder = nv % nbin # we will get remainder if the choice of nbin is not divisible by nv
+    edges = [i * bin_size for i in range(nbin+1)] # define the [) inclusive exclusive edges of bins
+    if remainder != 0: # if have remainder, we put them in the last bin
         edges[-1] = nv
     
     for x in range(nx):
@@ -120,10 +198,9 @@ def jcmt_window(cube, nbin=30, clips=[2,2.5,3], plot_progress=None, avg_mode='me
                 
             mask_binned = ~np.isnan(binned)
             mask_binned_old = mask_binned.copy()
-            # protect the emission wings, by assigning true to the neighour
-            
-            emission_binned = ~mask_binned
 
+            # protect the emission wings, by assigning true to the neighour
+            emission_binned = ~mask_binned
             emission_binned = binary_dilation(emission_binned, iterations=bin_expand)
             mask_binned = ~emission_binned
             
@@ -139,28 +216,7 @@ def jcmt_window(cube, nbin=30, clips=[2,2.5,3], plot_progress=None, avg_mode='me
             mask_full = np.array(mask_full)
             window[:,y,x] = mask_full
         
-    # show a few (3 by 3) plots and their windows for checking
-    # choose 3 strong pixels, 3 medium and 3 weak, based on percentile of max 
-    fig, axes = plt.subplots(3,3)
-    axes = axes.flatten()
-    cube_max = np.nanmax(data, axis=0)
-    max_sort = np.argsort(cube_max.flatten())
-    nspec = len(max_sort)
-    top3 = max_sort[-4:-1]
-    mid3 = max_sort[nspec//2:nspec//2+3]
-    low3 = max_sort[:3]
-    all_chosen = np.concatenate([top3, mid3, low3])
-    all_chosen = np.unravel_index(all_chosen, cube_max.shape)
-    for i in range(9):
-        iy, ix = all_chosen[0][i], all_chosen[1][i]
-        ax = axes[i]
-        spec = data[:,iy,ix]
-        window_i = window[:, iy, ix]
-        ax.step(vel, spec)
-        ax.step(vel, window_i)
-        ax.set_title(f"(x ={ix},y={iy})", fontsize=8)
-    
-    plt.show()
+    browse_profiles(data, vel, window)
     
     return window, edges
 
@@ -259,7 +315,13 @@ if __name__ == "__main__":
             to_show = True
         else:
             to_show = False
-        window, edges = jcmt_window(cube, nbin=nbin, clips=clips, plot_progress=to_show)
+        smooth_kernel = input("tophat smooth cube prior to windowing? (enter kernel size v,y,x or 0 to skip): ")
+        if smooth_kernel != '0':
+            smooth_kernel = list(map(int,smooth_kernel.split(',')))
+        else:
+            smooth_kernel = None
+        bin_expand = int(input("Number of neighboring bin each side to mask as emission to protect wings (default 1): "))
+        window, edges = jcmt_window(cube, nbin=nbin, clips=clips, smooth_kernel=smooth_kernel, bin_expand= bin_expand, plot_progress=to_show)
         comment = comment + f"Window is automatically defined with nbin of {nbin} with clips {clips}. "
                     
         # saving results by creating a file with multiple hdu
