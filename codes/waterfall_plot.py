@@ -5,8 +5,8 @@ from spectral_cube import SpectralCube
 import astropy.units as u
 import matplotlib.pyplot as plt
 import numpy as np
-from codes.utils import cube_spectral_smooth
-plt.style.use('./codes/astro.mplstyle')
+from utils import cube_spectral_smooth
+plt.style.use('./astro.mplstyle')
 
 def cube_trim(cube, vmin, vmax):
     cube = cube.spectral_slab(vmin*u.km/u.s, vmax*u.km/u.s)

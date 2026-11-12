@@ -11,14 +11,14 @@ u.add_enabled_units(u.def_unit(['K (Tmb)'], represents=u.K))
 u.add_enabled_units(u.def_unit(["K (Ta*)"], represents=u.K))
 # cube = SpectralCube.read(args.input_cube_path)
 # D:/NaritNextcloud/NARIT_RA/carta/TRAO/fits_files/w43
-from codes.utils.cube_spectral_smooth import cube_spectral_smooth
-from codes.utils.average_plotting import average_plotting
-from codes.utils.cube_mask import cube_mask
-from codes.utils.spectrum_smooth import spectrum_smooth
+from utils.cube_spectral_smooth import cube_spectral_smooth
+from utils.average_plotting import average_plotting
+from utils.cube_mask import cube_mask
+from utils.spectrum_smooth import spectrum_smooth
 from pybaselines import Baseline
 import sys 
 from astropy.io import fits
-from codes.cube_signal_window import jcmt_window
+from cube_signal_window import jcmt_window
 import matplotlib.colors as mcolors
 from scipy.interpolate import interp1d
 from scipy.interpolate import make_splrep, make_lsq_spline
@@ -333,9 +333,9 @@ if __name__ == "__main__":
     output_path = input("input the output path: ")
     primary_header = cube.header
     primary_header.add_comment(comment)
-    hdu1 = fits.PrimaryHDU(data=corrected, header=primary_header)
+    hdu1 = fits.PrimaryHDU(data=corrected, header=primary_header,)
     hdu2 = fits.ImageHDU(data=baseline, header=cube.header, name='BASELINE')
-    hdu3 = fits.ImageHDU(data=cube.unmasked_data[:].value, header=cube.header, name='UN-BASELINED')
-    hdu4 = fits.ImageHDU(data=window, header=cube.header, name='MASK')
+    hdu3 = fits.ImageHDU(data=cube.unmasked_data[:].value, header=cube.header, name='ORIGINAL')
+    hdu4 = fits.ImageHDU(data=window, header=cube.header, name='WINDOW')
     hdul = fits.HDUList([hdu1, hdu2, hdu3, hdu4])
     hdul.writeto(output_path, overwrite=True)

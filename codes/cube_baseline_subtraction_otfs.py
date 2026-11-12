@@ -33,10 +33,10 @@ from spectral_cube import SpectralCube
 from astropy.wcs import WCS
 import astropy.units as u
 from astropy.io import fits
-from codes.cube_rms_estimate import rms_negative
-from codes.utils.average_plotting import average_plotting
-from codes.cube_signal_window import jcmt_window
-from codes.cube_baseline_subtraction import baseline_iterative_poly, baseline_spline
+from cube_rms_estimate import rms_negative
+from utils.average_plotting import average_plotting
+from cube_signal_window import jcmt_window
+from cube_baseline_subtraction import baseline_iterative_poly, baseline_spline
 import numpy as np
 import matplotlib.pyplot as plt
 

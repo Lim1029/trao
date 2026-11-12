@@ -9,17 +9,17 @@ from pybaselines.polynomial import imodpoly
 import matplotlib.pyplot as plt
 u.add_enabled_units(u.def_unit(['K (Tmb)'], represents=u.K))
 u.add_enabled_units(u.def_unit(["K (Ta*)"], represents=u.K))
-from codes.utils import cube_spectral_smooth, spectrum_smooth
-from codes.utils.cube_mask import cube_mask
-from codes.utils.spectrum_smooth import spectrum_smooth
+from utils import cube_spectral_smooth, spectrum_smooth
+from utils.cube_mask import cube_mask
+from utils.spectrum_smooth import spectrum_smooth
 from pybaselines import Baseline
 import sys 
 from astropy.io import fits
-from codes.utils.cube_smooth_tophat import TopHat_3DFilter
+from utils.cube_smooth_tophat import TopHat_3DFilter
 from scipy.ndimage import gaussian_filter1d, binary_dilation
 
 # matplotlib configuration'
-plt.style.use('./codes/astro.mplstyle')
+plt.style.use('./astro.mplstyle')
 plt.rcParams['figure.figsize'] = (1920/162, 1080/162)
 
 ############################ cube operation ############################
