@@ -168,9 +168,9 @@ MASK:
 
 ## # How to Run 
 
-To perform baseline subtraction this terminal command can be used 
+To perform baseline subtraction this terminal command can be used (in the directory ./codes): 
 
-    python -m codes.cube_baseline_subtraction
+    python cube_baseline_subtraction
 
 The code will then interactively ask for user inputs. An example routine with appropriate parameters is shown below:
 
