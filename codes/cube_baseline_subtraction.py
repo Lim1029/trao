@@ -238,6 +238,43 @@ def baseline_spline(cube, window, knot_start= 200, knot_spacing = 200, k=3, edge
 # def jcmt_window(cube, nbin):
     # window, edges = jcmt_window(cube, nbin=nbin)
     # return window
+
+def common_baseline(cube, window, poly_order):
+    x = cube.spectral_axis.value
+    data = cube.unmasked_data[:].value # (nspec, ny, nx)
+    nspec, ny, nx = data.shape
+    
+    # Compute channel-by-channel median of line-free pixels using the window mask
+    med_spec = np.zeros(nspec)
+    weight = np.zeros(nspec, dtype=int)
+    
+    for chan in range(nspec):
+        slice_data = data[chan, :, :]
+        slice_mask = window[chan, :, :] > 0  # Line-free indicator
+        line_free_pixels = slice_data[slice_mask & ~np.isnan(slice_data)]
+        if line_free_pixels.size > 0:
+            med_spec[chan] = np.median(line_free_pixels)
+            if line_free_pixels.size >= 0.5 * (ny * nx):
+                weight[chan] = 1
+        else:
+            med_spec[chan] = np.nan
+            weight[chan] = 0
+            
+    # Interpolate over any completely masked/NaN channels in med_spec
+    valid_chans = ~np.isnan(med_spec)
+    if not np.all(valid_chans):
+        med_spec = np.interp(x, x[valid_chans], med_spec[valid_chans])
+        
+    # Fit imodpoly to the global spatial median spectrum
+    baseline_1d, params = imodpoly(med_spec, x, poly_order=poly_order, weights=weight,
+                         mask_initial_peaks=False, num_std=3, use_original=True, return_coef=True)
+    coef = params['coef']
+
+    baseline_cube = np.broadcast_to(baseline_1d[:, None, None], data.shape).copy()
+    corrected_cube = data - baseline_cube
+    
+    return corrected_cube, baseline_cube
+
     
 def fix_window(cube, wlist):
     x = cube.spectral_axis.value
@@ -297,7 +334,9 @@ if __name__ == "__main__":
             
             window, nbin, clips, smooth_kernel = jcmt_window_test(cube)
             omment = comment + f"Window is automatically defined with nbin of {nbin}, clipping with {clips} and tophat smoothed with kernel size {smooth_kernel} prior to windowing."
-    fitting_method = int(input("Input Baseline Fitting method (1) fixed poly (2) iterative poly (3) spline: "))
+   
+
+    fitting_method = int(input("Input Baseline Fitting method (1) fixed poly (2) iterative poly (3) spline (4) common baseline for each pixel: "))
     match fitting_method:
         case 1:
             poly_order = int(input("Input poly order: "))
@@ -313,6 +352,11 @@ if __name__ == "__main__":
             edge_channels = int(input("Input edge averaging channels [30]: ") or 30)
             corrected, baseline = baseline_spline(cube, window, knot_start = knot_start, knot_spacing = knot_spacing, edge_channels = edge_channels)
             comment = comment + f"The baseline is fitted with cube spline function."
+
+        case 4:
+            poly_order = int(input("Input poly order:"))
+            corrected, baseline = common_baseline(cube, window, poly_order)
+            comment = comment + f"The baseline is fitted with polynomial function with order {poly_order} and common baseline modeled from averaged spectra. "
         
         case _:
             print('Nothing is done')
