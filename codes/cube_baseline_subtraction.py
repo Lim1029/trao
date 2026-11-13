@@ -297,6 +297,11 @@ if __name__ == "__main__":
     comment = 'During the baseline subtraction process, '
     cube_path = input("Input full/relative path to cube fits: ")
     cube = SpectralCube.read(cube_path).with_spectral_unit(u.km/u.s)
+
+    # Drop the first and last 20 spectral channels
+    cube = cube[20:-20, :, :]
+    #comment = comment + "First and last 20 channels only contains NaN values. "
+
     print(f"Currently, the cube has a bandwidth of {cube.spectral_axis[0]:.2f} to {cube.spectral_axis[-1]:.2f} km/s")
     vlims = input("Input vmin and vmax in km/s separated by ',' to trim the cube (0 to skip trimming): ")
     if vlims != '0':
@@ -386,6 +391,7 @@ if __name__ == "__main__":
     hdu1 = fits.PrimaryHDU(data=corrected, header=primary_header)
     hdu2 = fits.ImageHDU(data=baseline, header=cube.header, name='BASELINE')
     hdu3 = fits.ImageHDU(data=cube.unmasked_data[:].value, header=cube.header, name='UN-BASELINED')
-    hdu4 = fits.ImageHDU(data=window, header=cube.header, name='MASK')
+    hdu4 = fits.ImageHDU(data=window.astype(int), header=cube.header, name='MASK')
+    #hdu4 = fits.ImageHDU(data=window, header=cube.header, name='MASK')
     hdul = fits.HDUList([hdu1, hdu2, hdu3, hdu4])
     hdul.writeto(output_path, overwrite=True)
