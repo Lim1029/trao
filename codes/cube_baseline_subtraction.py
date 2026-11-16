@@ -1,5 +1,5 @@
 # this code explores different methods of performing baseline subtraction of a cube
-# last update: 8 May 2026
+# last update: 15 Nov 2026
 
 # from useful_functions import baseline_cube
 from spectral_cube import SpectralCube, BooleanArrayMask
@@ -18,7 +18,7 @@ from utils.spectrum_smooth import spectrum_smooth
 from pybaselines import Baseline
 import sys 
 from astropy.io import fits
-from cube_signal_window import jcmt_window
+from cube_signal_window import jcmt_window, jcmt_window_shrink
 import matplotlib.colors as mcolors
 from scipy.interpolate import interp1d
 from scipy.interpolate import make_splrep, make_lsq_spline
@@ -233,6 +233,130 @@ def baseline_spline(cube, window, knot_start= 200, knot_spacing = 200, k=3, edge
             corrected_cube[:,j,i] = corrected
             baseline_cube[:,j,i] = baseline
     return corrected_cube, baseline_cube    
+
+def common_baseline(cube, window, poly_order, white_only=False):
+    x = cube.spectral_axis.value
+    data = cube.unmasked_data[:].value # (nspec, ny, nx)
+    nspec, ny, nx = data.shape
+
+    if white_only:
+        pure_bkg_mask = np.all(window > 0, axis=0)
+        num_clean_pixels = np.sum(pure_bkg_mask)
+        print(f"Found {num_clean_pixels} fully clean(white pixels) spatial pixels out of {ny * nx} total pixels.")
+        
+        # Safety check for data starvation
+        if num_clean_pixels == 0:
+            raise ValueError(
+                "Error: No spatial pixels are completely line-free across all channels! "
+            )
+        
+        clean_spectra = data[:, pure_bkg_mask]  # Shape: (nspec, num_clean_pixels)
+        
+        med_spec = np.nanmedian(clean_spectra, axis=1)
+        weight = np.ones(nspec, dtype=int)
+    
+    else:
+        # Compute channel-by-channel median of line-free pixels using the window mask
+        med_spec = np.zeros(nspec)
+        weight = np.zeros(nspec, dtype=int)
+        
+        for chan in range(nspec):
+            slice_data = data[chan, :, :]
+            slice_mask = window[chan, :, :] > 0  # Line-free indicator
+            line_free_pixels = slice_data[slice_mask & ~np.isnan(slice_data)]
+            if line_free_pixels.size > 0:
+                med_spec[chan] = np.median(line_free_pixels)
+                if line_free_pixels.size >= 0.5 * (ny * nx):
+                    weight[chan] = 1
+            else:
+                med_spec[chan] = np.nan
+                weight[chan] = 0
+                
+        # Interpolate over any completely masked/NaN channels in med_spec
+        valid_chans = ~np.isnan(med_spec)
+        if not np.all(valid_chans):
+            med_spec = np.interp(x, x[valid_chans], med_spec[valid_chans])
+        
+    # Fit imodpoly to the global spatial median spectrum
+    baseline_1d, params = imodpoly(med_spec, x, poly_order=poly_order, weights=weight,
+                         mask_initial_peaks=False, num_std=3, use_original=True, return_coef=True)
+    coef = params['coef']
+
+    baseline_cube = np.broadcast_to(baseline_1d[:, None, None], data.shape).copy()
+    corrected_cube = data - baseline_cube
+    
+    return corrected_cube, baseline_cube
+
+def common_baseline_spline(cube, window, white_only=False):
+    x = cube.spectral_axis.value
+    data = cube.unmasked_data[:].value # (nspec, ny, nx)
+    nspec, ny, nx = data.shape
+
+    # default parameters, lazy to vary for now
+    knot_start = 200
+    knot_spacing = 200
+    k = 3
+    edge_channels = 30
+
+    if white_only:
+        pure_bkg_mask = np.all(window > 0, axis=0)
+        num_clean_pixels = np.sum(pure_bkg_mask)
+        print(f"Found {num_clean_pixels} fully clean(white pixels) spatial pixels out of {ny * nx} total pixels.")
+        
+        # Safety check for data starvation
+        if num_clean_pixels == 0:
+            raise ValueError(
+                "Error: No spatial pixels are completely line-free across all channels! "
+            )
+        
+        clean_spectra = data[:, pure_bkg_mask]  # Shape: (nspec, num_clean_pixels)
+        
+        med_spec = np.nanmedian(clean_spectra, axis=1)
+        weight = np.ones(nspec, dtype=int)
+    
+    else:
+        # Compute channel-by-channel median of line-free pixels using the window mask
+        med_spec = np.zeros(nspec)
+        weight = np.zeros(nspec, dtype=int)
+        
+        for chan in range(nspec):
+            slice_data = data[chan, :, :]
+            slice_mask = window[chan, :, :] > 0  # Line-free indicator
+            line_free_pixels = slice_data[slice_mask & ~np.isnan(slice_data)]
+            if line_free_pixels.size > 0:
+                med_spec[chan] = np.median(line_free_pixels)
+                if line_free_pixels.size >= 0.5 * (ny * nx):
+                    weight[chan] = 1
+            else:
+                med_spec[chan] = np.nan
+                weight[chan] = 0
+                
+        # Interpolate over any completely masked/NaN channels in med_spec
+        valid_chans = ~np.isnan(med_spec)
+        if not np.all(valid_chans):
+            med_spec = np.interp(x, x[valid_chans], med_spec[valid_chans])
+        
+    # Fit spline with recommended parameter (for now)
+    y = med_spec
+    y = np.nan_to_num(y)
+    y_new = y.copy()
+    
+    # make knots (t) every N channels, and at the boundary
+    t = x[knot_start:-1:knot_spacing]
+    t = np.r_[(x[0],)*(k+1),t,(x[-1],)*(k+1)]       
+
+    try:
+        spl = make_lsq_spline(x, y_new, t, k)
+    except:
+        breakpoint()
+    baseline_1d = spl(x)
+
+    baseline_cube = np.broadcast_to(baseline_1d[:, None, None], data.shape).copy()
+    corrected_cube = data - baseline_cube
+    
+    return corrected_cube, baseline_cube
+
+
 ############################ window defining ############################
 # def jcmt_window(cube, nbin):
     # window, edges = jcmt_window(cube, nbin=nbin)
@@ -259,6 +383,7 @@ if __name__ == "__main__":
     comment = 'During the baseline subtraction process, '
     cube_path = input("Input full/relative path to cube fits: ")
     cube = SpectralCube.read(cube_path).with_spectral_unit(u.km/u.s)
+    cube = cube[20:-20, :, :]
     print(f"Currently, the cube has a bandwidth of {cube.spectral_axis[0]:.2f} to {cube.spectral_axis[-1]:.2f} km/s")
     vlims = input("Input vmin and vmax in km/s separated by ',' to trim the cube (0 to skip trimming): ")
     if vlims != '0':
@@ -269,7 +394,7 @@ if __name__ == "__main__":
     if target_reso != 0:
         cube = cube_smooth(cube, target_reso=target_reso)
         comment = comment + f"The cube is smoothed spectrally to {target_reso} km/s. "
-    window_method = int(input("How to define spectral window? (1) no window (2) user-defined (3) automatic: "))
+    window_method = int(input("How to define spectral window? (1) no window (2) user-defined (3) jcmt window: "))
     match window_method:
         case 1:
             window = no_window(cube)
@@ -280,18 +405,32 @@ if __name__ == "__main__":
             window = fix_window(cube, vlims)
             comment = comment + f'Fix spectral window of [{vlims}] is defined. '
         case 3:
-            nbin = int(input(f"Input nbin, to divide {len(cube.spectral_axis)} channels: "))
+#            nbin = int(input(f"Input nbin, to divide {len(cube.spectral_axis)} channels: "))
+            bin_size= int(input(f"Input binsize, to divide {len(cube.spectral_axis)} channels (km/s) [5]: "))
             clips = input("Input clip (in unit of sigma) separated by , (e.g., 2,2.5,3): ")
             clips = list(map(float,clips.split(',')))
-            smooth_kernel = input("tophat smooth cube prior to windowing? (enter kernel size v,y,x or 0 to skip): ")
-            bin_expand = int(input("Number of neighboring bin each side to mask as emission to protect wings (default 1): "))
+            smooth_kernel = input("tophat smooth cube prior to windowing? (enter kernel size v,y,x or 0 to skip) [5,5,5]: ")
+            bin_expand = int(input("Number of neighboring bin each side to mask as emission to protect wings [1]: "))
             if smooth_kernel != '0':
                 smooth_kernel = list(map(int,smooth_kernel.split(',')))
             else:
                 smooth_kernel = None
-            window, edges = jcmt_window(cube, nbin=nbin, clips=clips, smooth_kernel=smooth_kernel, bin_expand= bin_expand)
-            comment = comment + f"Window is automatically defined with nbin of {nbin}, clipping with {clips} and tophat smoothed with kernel size {smooth_kernel} prior to windowing."
-    fitting_method = int(input("Input Baseline Fitting method (1) fixed poly (2) iterative poly (3) spline: "))
+            comment = comment + f"Window is automatically defined with binsize of {bin_size} km/s, clipping with {clips} and tophat smoothed with kernel size {smooth_kernel} prior to windowing."
+
+            to_show = input('whether to plot selected spectra to examine (y/n): ')
+            if to_show == 'y':
+                to_plot = True,
+            else:
+                to_plot = False
+
+            to_shrink = input("Whether to iterate with half-shrinked window to detect narrow components (y/n): ")
+            if to_shrink == 'y':
+                window, nbin, clips, smooth_kernel = jcmt_window_shrink(cube, init_binwidth=bin_size, clips=clips, smooth_kernel=smooth_kernel, bin_expand=bin_expand, to_plot=to_plot)
+                comment = comment + f"shrinking algorithm is applied."
+            else:
+                window, edges = jcmt_window(cube, binwidth=bin_size, clips=clips, smooth_kernel=smooth_kernel, bin_expand=bin_expand, to_plot=to_plot)
+    fitting_method = int(input("Input Baseline Fitting method (1) fixed poly (2) iterative poly (3) spline (4) common baseline for each pixel: "))
+
     match fitting_method:
         case 1:
             poly_order = int(input("Input poly order: "))
@@ -307,7 +446,24 @@ if __name__ == "__main__":
             edge_channels = int(input("Input edge averaging channels [30]: ") or 30)
             corrected, baseline = baseline_spline(cube, window, knot_start = knot_start, knot_spacing = knot_spacing, edge_channels = edge_channels)
             comment = comment + f"The baseline is fitted with cube spline function."
-        
+    
+        case 4:
+            is_white_only = input("whether to fit only to white (emission-free) pixels? (y/n): ")
+            comment = comment + f"The baseline is fitted on common baseline modeled from averaged spectra "
+            if is_white_only:
+                white_only = True
+                comment = comment + " of only white (emission-free) pixels. "
+            else:
+                white_only = False
+            method = input("fitting method (poly/spline) [poly]: ")
+            if method == 'spline':
+                corrected, baseline = common_baseline_spline(cube, window, white_only=white_only)
+                comment = comment + " fitting model is cubic spline with recommended parameters"
+            else:
+                poly_order = int(input("Input poly order: "))
+                corrected, baseline = common_baseline(cube, window, poly_order, white_only=white_only)
+                comment = comment + f" fitting model is poly with order {poly_order}"
+
         case _:
             print('Nothing is done')
             sys.exit(0)
@@ -336,6 +492,6 @@ if __name__ == "__main__":
     hdu1 = fits.PrimaryHDU(data=corrected, header=primary_header,)
     hdu2 = fits.ImageHDU(data=baseline, header=cube.header, name='BASELINE')
     hdu3 = fits.ImageHDU(data=cube.unmasked_data[:].value, header=cube.header, name='ORIGINAL')
-    hdu4 = fits.ImageHDU(data=window, header=cube.header, name='WINDOW')
+    hdu4 = fits.ImageHDU(data=window.astype(int), header=cube.header, name='WINDOW')
     hdul = fits.HDUList([hdu1, hdu2, hdu3, hdu4])
     hdul.writeto(output_path, overwrite=True)

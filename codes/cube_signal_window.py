@@ -147,13 +147,21 @@ def browse_profiles(data, vel, window=None, nrows=3, ncols=3, descending=True, w
     return fig
 
 
-def jcmt_window(cube, nbin=30, clips=[2,2.5,3], plot_progress=None, avg_mode='mean', smooth_kernel=None, bin_expand=1):
+def jcmt_window(cube, binwidth=5, clips=[2,2.5,3], plot_progress=None, avg_mode='mean', smooth_kernel=None, bin_expand=1, to_plot=False):
     data = cube.filled_data[:].value # (nspec, ny, nx)
     if smooth_kernel != None:   # for weak low SNR emission, we may want to smooth first
         data = TopHat_3DFilter(data, smooth_kernel)
     window = np.full(data.shape, np.nan)
     vel = cube.spectral_axis.to(u.km/u.s).value
     nv, ny, nx = data.shape # define the binning edges
+    dv = np.abs(vel[1] - vel[0])  # Velocity spacing per channel
+
+    # Base bin size to binwidth (km/s)
+    bin_size = int(np.round(binwidth / dv))
+    if bin_size < 1:
+        bin_size = 1
+    nbin = nv // base_bin_size
+    print('Number of base bins:', nbin)
     bin_size = nv // nbin
     remainder = nv % nbin # we will get remainder if the choice of nbin is not divisible by nv
     edges = [i * bin_size for i in range(nbin+1)] # define the [) inclusive exclusive edges of bins
@@ -215,10 +223,136 @@ def jcmt_window(cube, nbin=30, clips=[2,2.5,3], plot_progress=None, avg_mode='me
                 mask_full = np.append(mask_full, [mask_binned[-1] for i in range(bin_size+remainder)])
             mask_full = np.array(mask_full)
             window[:,y,x] = mask_full
-        
-    browse_profiles(data, vel, window)
+    if to_plot: 
+        browse_profiles(data, vel, window)
     
     return window, edges
+
+def jcmt_window_shrink(cube, init_binwidth=5, clips=[3,3,3], avg_mode='mean', smooth_kernel=[5,5,5], bin_expand=1, to_plot=False):
+
+    raw_data = cube.filled_data[:].value  # Keeping the raw data 
+    data = raw_data.copy()
+
+    if smooth_kernel != None:
+        data = TopHat_3DFilter(data, smooth_kernel)
+
+    nv, ny, nx = data.shape
+    n_iters = len(clips)
+
+    vel = cube.spectral_axis.to(u.km / u.s).value
+    dv = np.abs(vel[1] - vel[0])  # Velocity spacing per channel
+
+    # Base bin size to init_binwidth (km/s)
+    base_bin_size = int(np.round(init_binwidth / dv))
+    if base_bin_size < 1:
+        base_bin_size = 1
+
+    base_nbin = nv // base_bin_size
+    print('Initial number of base bins:', base_nbin)
+
+    # Track 4D mask layout across iterations
+    window = np.ones((n_iters, nv, ny, nx), dtype=bool)
+
+    edges = None # placeholder for return reference
+    for x in range(nx):
+        for y in range(ny):
+            spec = data[:, y, x]
+            
+            if np.all(np.isnan(spec)):
+                continue
+
+            spec_working = spec.copy()
+
+            for i, clip in enumerate(clips):
+            
+                # Dynamically calculate current bin parameters per iteration (shrinking/growing multi-scale)
+                current_nbin = base_nbin * (2**i)
+                if current_nbin > nv:
+                    current_nbin = nv
+
+                # Split spectrum into exact contiguous chunks to guarantee total length matches nv precisely
+                chunks = np.array_split(spec_working, current_nbin)
+                binned = np.array([np.nanmean(chunk) for chunk in chunks], dtype=float)
+
+                if np.all(np.isnan(binned)):
+                    break
+
+                if avg_mode == 'mean':
+                    avg = np.nanmean(binned)
+                elif avg_mode == 'median':
+                    avg = np.nanmedian(binned)
+
+                # Absolute deviations & MAD
+                med_binned = np.nanmedian(binned)
+                abs_deviation = np.abs(binned - med_binned)
+                mad = np.nanmedian(abs_deviation)
+
+                std = 1.4826 * mad if mad > 0 else np.nanstd(binned)
+
+                binned_clipped = np.where(binned > avg + clip * std, np.nan, binned)
+                mask_binned = ~np.isnan(binned_clipped)
+
+                # Map back to channel scale precisely matching each chunk's length
+                mask_full = np.concatenate([np.repeat(mb, len(chunk)) for mb, chunk in zip(mask_binned, chunks)])
+                mask_full = np.array(mask_full, dtype=bool)
+
+                # Signal wing dilation
+                emission_full = ~mask_full
+                if np.sum(emission_full) > 0:
+                    emission_expanded = binary_dilation(emission_full, structure=np.ones(11))
+                    mask_full = ~emission_expanded
+
+                # Bandpass edge protection
+                mask_full[:5] = True
+                mask_full[-5:] = True
+
+                # Exclude found features for subsequent passes
+                spec_working[~mask_full] = np.nan
+                window[i, :, y, x] = mask_full
+
+    # Combine noise regions across iterations
+    master_window = np.logical_and.reduce(window, axis=0)
+
+    # Visualization grid
+    if to_plot:
+        fig, axes = plt.subplots(3, 3, figsize=(12, 10), sharex=True)
+        axes = axes.flatten()
+    
+        cube_max = np.nanmax(data, axis=0)
+        max_sort = np.argsort(cube_max.flatten())
+        nspec_total = len(max_sort)
+    
+        top3 = max_sort[-4:-1]
+        mid3 = max_sort[nspec_total // 2: nspec_total // 2 + 3]
+        low3 = max_sort[:3]
+        all_chosen = np.unravel_index(np.concatenate([top3, mid3, low3]), cube_max.shape)
+    
+        mask_colors = ['red', 'magenta', 'cyan', 'orange', 'green']
+    
+        for i in range(9):
+            iy, ix = all_chosen[0][i], all_chosen[1][i]
+            ax = axes[i]
+    
+            spec_smoothed = data[:, iy, ix]
+            spec_raw = raw_data[:, iy, ix]
+    
+            ax.step(vel, spec_raw, color='lightgray', linewidth=0.5, alpha=0.5, label='Raw Spec')
+            ax.step(vel, spec_smoothed, color='black', linewidth=0.8, alpha=0.7, label='Smoothed Spec')
+    
+            for iter_idx in range(n_iters):
+                window_iter = window[iter_idx, :, iy, ix]
+                color = mask_colors[iter_idx % len(mask_colors)]
+                mask_display = window_iter * np.nanmax(spec_smoothed) * 0.9
+                ax.step(vel, mask_display, color=color, linewidth=1.2,
+                        alpha=0.8, label=rf"Iter {iter_idx + 1} ({clips[iter_idx]} sigma)")
+            ax.set_title(f"(x={ix}, y={iy})", fontsize=8)
+            if i == 0:
+                ax.legend(fontsize=7, loc='upper right')
+    
+        plt.tight_layout()
+        plt.show()
+
+    return master_window, base_nbin, clips, smooth_kernel
 
 def window_visualise(cube, window,baseline, original, snr_threshold=0):
 
@@ -307,21 +441,36 @@ if __name__ == "__main__":
             cube = cube.with_mask(expanded_mask)
             
         print('performing dynamic singal windowing...')
-        nbin = int(input(f"Input nbin, to divide {len(cube.spectral_axis)} channels: "))
+#       nbin = int(input(f"Input nbin, to divide {len(cube.spectral_axis)} channels: "))
+        bin_size= int(input(f"Input binsize, to divide {len(cube.spectral_axis)} channels (km/s) [5]: "))
         clips = input("Input clip (in unit of sigma) separated by , (e.g., 2,2.5,3): ")
         clips = list(map(float,clips.split(',')))
-        to_show = input("show the windowing process (y/n)?: ")
-        if to_show == 'y':
-            to_show = True
-        else:
-            to_show = False
-        smooth_kernel = input("tophat smooth cube prior to windowing? (enter kernel size v,y,x or 0 to skip): ")
+#         to_show = input("show the windowing process (y/n)?: ")
+#         if to_show == 'y':
+#             to_show = True
+#         else:
+#             to_show = False
+        smooth_kernel = input("tophat smooth cube prior to windowing? (enter kernel size v,y,x or 0 to skip) [5,5,5]: ")
         if smooth_kernel != '0':
             smooth_kernel = list(map(int,smooth_kernel.split(',')))
         else:
             smooth_kernel = None
-        bin_expand = int(input("Number of neighboring bin each side to mask as emission to protect wings (default 1): "))
-        window, edges = jcmt_window(cube, nbin=nbin, clips=clips, smooth_kernel=smooth_kernel, bin_expand= bin_expand, plot_progress=to_show)
+        bin_expand = int(input("Number of neighboring bin each side to mask as emission to protect wings [1]: "))
+        
+        to_show = input('whether to plot selected spectra to examine (y/n): ')
+        if to_show == 'y':
+            to_plot = True,
+        else:
+            to_plot = False 
+
+        comment = comment + f"Window is automatically defined with binsize of {bin_size} km/s, clipping with {clips} and topha    t smoothed with kernel size {smooth_kernel} prior to windowing."
+
+        to_shrink = input("Whether to iterate with half-shrinked window to detect narrow components (y/n): ")
+        if to_shrink == 'y':
+            window, nbin, clips, smooth_kernel = jcmt_window_shrink(cube, init_binwidth=bin_size, clips=clips, smooth_kernel=smooth_kernel, bin_expand=bin_expand, to_plot=to_plot) 
+            comment = comment + f"shrinking algorithm is applied."
+        else:
+            window, edges = jcmt_window(cube, bin_size=bin_size, clips=clips, smooth_kernel=smooth_kernel, bin_expand=bin_expand, to_plot = to_plot)
         comment = comment + f"Window is automatically defined with nbin of {nbin} with clips {clips}. "
                     
         # saving results by creating a file with multiple hdu
