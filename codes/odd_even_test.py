@@ -33,4 +33,12 @@ plt.scatter(odd_means,even_means)
 plt.xlabel('odd channels - mean')
 plt.ylabel('even channels - mean')
 plt.title(f"{hdul[0].header['OBJECT']} - {hdul[0].header['LINE']}")
-plt.show()
+
+is_to_show = input('to show the plot? (y/n): ')
+if is_to_show == 'y':
+    plt.show()
+
+output_path = input("input path to the output image (0 to skip): ")
+
+if output_path != '0':
+    plt.savefig(output_path, dpi=150)

@@ -1,5 +1,8 @@
 # Baseline Method
 
+QUICK LINK:
+
+Odd and Even Test Results: ['odd_even_test.pdf'](odd_even_test.py)
 
 The cube_baseline_subtraction is being run as a module here from the directory which contains ['codes/cube_baseline_subtraction.py'](codes/cube_baseline_subtraction.py)
 
