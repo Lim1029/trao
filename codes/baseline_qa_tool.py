@@ -15,7 +15,7 @@ hdu_names = ['ORIGINAL','BASELINED','WINDOW','BASELINE']
 plt.rcParams.update({"font.size": 8,})
 
 fig = plt.figure(tight_layout=True, figsize = (16,9))
-gs = fig.add_gridspec(5,1, height_ratios=[1,1.5,0.2,0.2,0.2])
+gs = fig.add_gridspec(5,1, height_ratios=[1,1.5,0.25,0.1,0.2])
 gs_mom0 = gs[0, 0].subgridspec(1, 6)
 
 # we do not assume the velocity axis of each hdu is the same
@@ -83,6 +83,7 @@ mask = np.all(data['WINDOW'] == 1, axis=0)
 spec_flat = data['ORIGINAL'].reshape(data['ORIGINAL'].shape[0],-1)
 selected = spec_flat[:, mask.ravel()]
 avg_white_original = np.median(selected, axis=1)
+std_white = np.std(avg_white_original)
 
 
 x,y = 33,33
@@ -166,12 +167,16 @@ ax_baseline_toggle = fig.add_subplot(gs_toggle[0,5])
 ax_relim = fig.add_subplot(gs_toggle[0,6])
 
 # add smooth textbox
-gs_smooth = gs_control[0,2].subgridspec(2,1) 
+gs_smooth = gs_control[0,2].subgridspec(3,2) 
 ax_smooth_original = fig.add_subplot(gs_smooth[0,0])
 ax_smooth_baselined = fig.add_subplot(gs_smooth[1,0])
+ax_smooth_white = fig.add_subplot(gs_smooth[2,0])
+ax_smooth = fig.add_subplot(gs_smooth[:,1])
 
 tb_smooth_original = TextBox(ax_smooth_original, 'kernel size [original] (pix)', initial='0')
 tb_smooth_baselined = TextBox(ax_smooth_baselined, 'kernel size [baselined] (pix)', initial='0')
+tb_smooth_white = TextBox(ax_smooth_white, 'kernel size [white] (pix)', initial='0')
+b_smooth = Button(ax_smooth, "smooth")
 
 b_left = Button(ax_left, '◀')
 b_right = Button(ax_right, '▶')
@@ -224,6 +229,7 @@ b_baseline_toggle.on_clicked(toggle_baseline)
 b_avg_white_toggle.on_clicked(toggle_avg_white)
 b_relim.on_clicked(relim)
 
+
 state = {'x': x, 'y': y}
 ny, nx = data['ORIGINAL'].shape[1], data['ORIGINAL'].shape[2]
 
@@ -245,9 +251,13 @@ def update_plot(x, y):
     original = data['ORIGINAL'][:,   y, x]
     mask = data['WINDOW'][:, y, x]
     linefree = np.where(mask==1, original, np.nan)
-    odd_avg = np.nanmean(linefree[::2])
-    even_avg = np.nanmean(linefree[1::2])
-    _stats_text.set_text(f'Baseline only: mean odd = {odd_avg:.2e}; mean even = {even_avg:.2e}')
+    linebusy = np.where(mask==0, original, np.nan)
+#    odd_avg = np.nanmean(linefree[::2])
+#    even_avg = np.nanmean(linefree[1::2])
+    std_linefree = np.nanstd(linefree)
+    std_linebusy = np.nanstd(linebusy)
+    std_all = np.nanstd(original)
+    _stats_text.set_text(f'Std Original (all, emission, non-emission, white) = ({std_all:.2e}, {std_linebusy:.2e}, {std_linefree:.2e}, {std_white:.2e})')
     
     # smooth the spectra first if necessary:
     if tb_smooth_original.text != '0':
@@ -264,16 +274,25 @@ def update_plot(x, y):
     else:
         _l_baselined.set_data(vel_axes['BASELINED'],  data['BASELINED'][:,  y, x])
 
+    if tb_smooth_white.text != '0':
+        kernel_size = int(tb_smooth_white.text)
+        smoothed_white = spectrum_smooth_kernel(avg_white_original, vel_axes['BASELINED'], kernel_size)
+        _l_avg_white.set_data(vel_axes['BASELINED'], smoothed_white)
+    else:
+        _l_avg_white.set_data(vel_axes['BASELINED'], avg_white_original)
+
     _l_base.set_data(     vel_axes['BASELINE'],   data['BASELINE'][:,   y, x])
 
     # 4) window opacities
     for i, span in enumerate(_spans):
         span.set_alpha(1.0 - data['WINDOW'][i, y, x])
+    fig.canvas.draw_idle()
 
 def move(dx, dy):
     x_ = int(np.clip(state['x'] + dx, 0, nx - 1))
     y_ = int(np.clip(state['y'] + dy, 0, ny - 1))
     if (x_, y_) != (state['x'], state['y']):
+        #print('position state changed')
         state['x'], state['y'] = x_, y_
         update_plot(x_, y_)
 
@@ -286,6 +305,8 @@ b_up   .on_clicked(lambda e: move(0,  1))
 b_down .on_clicked(lambda e: move(0, -1))
 b_left .on_clicked(lambda e: move(-1, 0))
 b_right.on_clicked(lambda e: move( 1, 0))
+
+b_smooth.on_clicked(lambda e: update_plot(state['x'], state['y']))
 
 def on_click(event):
     if event.inaxes not in [ax_mom0_original_all, ax_mom0_original_window, ax_mom0_original_nonwindow, ax_mom0_baselined_all, ax_mom0_baselined_window, ax_mom0_baselined_nonwindow]:
