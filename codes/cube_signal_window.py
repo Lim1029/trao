@@ -160,7 +160,7 @@ def jcmt_window(cube, binwidth=5, clips=[2,2.5,3], plot_progress=None, avg_mode=
     bin_size = int(np.round(binwidth / dv))
     if bin_size < 1:
         bin_size = 1
-    nbin = nv // base_bin_size
+    nbin = nv // bin_size
     print('Number of base bins:', nbin)
     bin_size = nv // nbin
     remainder = nv % nbin # we will get remainder if the choice of nbin is not divisible by nv

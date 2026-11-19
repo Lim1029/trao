@@ -450,7 +450,7 @@ if __name__ == "__main__":
         case 4:
             is_white_only = input("whether to fit only to white (emission-free) pixels? (y/n): ")
             comment = comment + f"The baseline is fitted on common baseline modeled from averaged spectra "
-            if is_white_only:
+            if is_white_only == 'y':
                 white_only = True
                 comment = comment + " of only white (emission-free) pixels. "
             else:
