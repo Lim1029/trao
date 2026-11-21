@@ -14,22 +14,17 @@ hdu_names = ['ORIGINAL','BASELINED','WINDOW','BASELINE']
 
 plt.rcParams.update({"font.size": 8,})
 
-fig = plt.figure(tight_layout=True, figsize = (16,9))
-gs = fig.add_gridspec(5,1, height_ratios=[1,1.5,0.25,0.1,0.2])
+# fig = plt.figure(tight_layout=True, figsize = (16,9))
+fig = plt.figure(figsize = (16,6))
+gs = fig.add_gridspec(5,1, height_ratios=[0,1.5,0.25,0.1,0.2])
 gs_mom0 = gs[0, 0].subgridspec(1, 6)
 
-# we do not assume the velocity axis of each hdu is the same
+# we assume the velocity axis of each hdu is the same
 # so we derive the axes from their respective header
-vel_axes = {}
-for hdu_name in hdu_names:
-    if hdu_name == 'BASELINED':
-        header = hdul[0].header
-    else:
-        header = hdul[hdu_name].header
-    pix_axis = np.arange(header['NAXIS3'])
-    vel = header['CRVAL3'] + (pix_axis - (header['CRPIX3'] - 1.0)) * header['CDELT3']
-    vel = vel*Unit(header['CUNIT3']).to(u.km/u.s)
-    vel_axes[hdu_name] = vel
+header = hdul[0].header
+pix_axis = np.arange(header['NAXIS3'])
+vel = header['CRVAL3'] + (pix_axis - (header['CRPIX3'] - 1.0)) * header['CDELT3']
+vel = vel*Unit(header['CUNIT3']).to(u.km/u.s)
 
 data = {}
 for hdu_name in hdu_names:
@@ -46,24 +41,33 @@ mom0_baselined_all = np.mean(data['BASELINED'],axis=0)
 mom0_baselined_window = np.nanmean(np.where(data['WINDOW']==0,data['BASELINED'],np.nan),axis=0)
 mom0_baselined_nonwindow = np.nanmean(np.where(data['WINDOW']==1,data['BASELINED'],np.nan),axis=0)
 
-ax_mom0_original_all = fig.add_subplot(gs_mom0[0,0])
-ax_mom0_original_window = fig.add_subplot(gs_mom0[0,1])
-ax_mom0_original_nonwindow = fig.add_subplot(gs_mom0[0,2])
-ax_mom0_baselined_all = fig.add_subplot(gs_mom0[0,3])
-ax_mom0_baselined_window = fig.add_subplot(gs_mom0[0,4])
-ax_mom0_baselined_nonwindow = fig.add_subplot(gs_mom0[0,5])
+# fig for moment0
+fig_mom = plt.figure(figsize = (16,3))
+
+ax_mom0_original_all = fig_mom.add_subplot(161)
+ax_mom0_original_window = fig_mom.add_subplot(162)
+ax_mom0_original_nonwindow = fig_mom.add_subplot(163)
+ax_mom0_baselined_all = fig_mom.add_subplot(164)
+ax_mom0_baselined_window = fig_mom.add_subplot(165)
+ax_mom0_baselined_nonwindow = fig_mom.add_subplot(166)
 
 im = ax_mom0_original_all.imshow(mom0_original_all, origin='lower')
+im.set_rasterized(True)
 plt.colorbar(im, ax=ax_mom0_original_all, location='top')
 im = ax_mom0_original_window.imshow(mom0_original_window, origin='lower')
+im.set_rasterized(True)
 plt.colorbar(im, ax=ax_mom0_original_window, location='top')
 im = ax_mom0_original_nonwindow.imshow(mom0_original_nonwindow, origin='lower')
+im.set_rasterized(True)
 plt.colorbar(im, ax=ax_mom0_original_nonwindow, location='top')
 im = ax_mom0_baselined_all.imshow(mom0_baselined_all, origin='lower')
+im.set_rasterized(True)
 plt.colorbar(im, ax=ax_mom0_baselined_all, location='top')
 im = ax_mom0_baselined_window.imshow(mom0_baselined_window, origin='lower')
+im.set_rasterized(True)
 plt.colorbar(im, ax=ax_mom0_baselined_window, location='top')
 im = ax_mom0_baselined_nonwindow.imshow(mom0_baselined_nonwindow, origin='lower')
+im.set_rasterized(True)
 plt.colorbar(im, ax=ax_mom0_baselined_nonwindow, location='top')
 
 # write titles
@@ -73,6 +77,71 @@ ax_mom0_original_nonwindow.set_title('Original; non-window only',pad=30,fontsize
 ax_mom0_baselined_all.set_title('Baselined; all',pad=30,fontsize=8)
 ax_mom0_baselined_window.set_title('Baselined; window only',pad=30,fontsize=8)
 ax_mom0_baselined_nonwindow.set_title('Baselined; non-window only',pad=30,fontsize=8)
+
+# plot markers placeholders
+px_marker_1, = ax_mom0_original_all.plot([], [], marker='x', color='red', linestyle='none', ms=8, mew=1.5)
+px_marker_2, = ax_mom0_original_window.plot([], [], marker='x', color='red', linestyle='none', ms=8, mew=1.5)
+px_marker_3, = ax_mom0_original_nonwindow.plot([], [], marker='x', color='red', linestyle='none', ms=8, mew=1.5)
+px_marker_4, = ax_mom0_baselined_all.plot([], [], marker='x', color='red', linestyle='none', ms=8, mew=1.5)
+px_marker_5, = ax_mom0_baselined_window.plot([], [], marker='x', color='red', linestyle='none', ms=8, mew=1.5)
+px_marker_6, = ax_mom0_baselined_nonwindow.plot([], [], marker='x', color='red', linestyle='none', ms=8, mew=1.5)
+
+
+def update_mom_marker(x,y):
+    px_marker_1.set_data([x], [y])
+    px_marker_2.set_data([x], [y])
+    px_marker_3.set_data([x], [y])
+    px_marker_4.set_data([x], [y])
+    px_marker_5.set_data([x], [y])
+    px_marker_6.set_data([x], [y])
+    fig_mom.canvas.draw_idle() 
+
+
+def on_click(event):
+    if event.inaxes not in [ax_mom0_original_all, ax_mom0_original_window, ax_mom0_original_nonwindow, ax_mom0_baselined_all, ax_mom0_baselined_window, ax_mom0_baselined_nonwindow]:
+        return
+    if event.xdata is None or event.ydata is None:
+        return
+    # ignore clicks while zoom/pan tools are active
+    tb = fig_mom.canvas.toolbar
+    if tb is not None and tb.mode != '':
+        return
+
+    x_ = int(np.clip(np.round(event.xdata), 0, nx - 1))
+    y_ = int(np.clip(np.round(event.ydata), 0, ny - 1))
+
+    state['x'], state['y'] = x_, y_
+    update_plot(x_, y_)
+
+fig_mom.canvas.mpl_connect('button_press_event', on_click)
+
+# perform odd-even test
+from odd_even_test import odd_even_test
+odd_means,even_means, x_oet, y_oet = odd_even_test(hdul)
+
+fig_oet = plt.figure(figsize=(5,5))
+ax_oet = fig_oet.add_subplot(1,1,1)
+ax_oet.set_aspect("equal")
+sc = ax_oet.scatter(odd_means, even_means, s=1, picker=True)
+ax_oet.set_xlabel('odd mean')
+ax_oet.set_ylabel('even mean')
+
+def on_pick(event):
+    if event.artist is not sc:
+        return
+
+    # several points can fall within the pick radius; take the closest one
+    ind = event.ind
+    mx, my = event.mouseevent.xdata, event.mouseevent.ydata
+    dists = (odd_means[ind] - mx)**2 + (even_means[ind] - my)**2
+    i = ind[np.argmin(dists)]
+    px, py = x_oet[i], y_oet[i]
+    state['x'], state['y'] = px, py
+
+    update_plot(px, py)
+
+cid = fig_oet.canvas.mpl_connect('pick_event', on_pick)
+
 
 # plot the average spectrum
 avg_original = np.mean(data['ORIGINAL'],axis=(1,2))
@@ -85,13 +154,21 @@ selected = spec_flat[:, mask.ravel()]
 avg_white_original = np.median(selected, axis=1)
 std_white = np.std(avg_white_original)
 
-
 x,y = 33,33
 ax = fig.add_subplot(gs[1,0])
 ax.autoscale(enable=True, axis='y')
-_l_avg_original, = ax.step(vel_axes['ORIGINAL'], avg_original, linewidth=0.5, color='pink', label='AVG ORIGINAL')
-_l_avg_baselined, = ax.step(vel_axes['BASELINED'], avg_baselined, linewidth=0.5, color='cyan', label='AVG BASELINED')
-_l_avg_white, = ax.step(vel_axes['ORIGINAL'], avg_white_original, linewidth=0.5, color='black', label='AVG WHITE')
+v0 = vel[0]
+dv = vel[1] - vel[0]
+
+def vel2chan(v):
+    return (v - v0) / dv
+
+def chan2vel(c):
+    return v0 + c * dv
+ax_top = ax.secondary_xaxis('top', functions=(vel2chan, chan2vel))
+_l_avg_original, = ax.step(vel, avg_original, linewidth=0.5, color='pink', label='AVG ORIGINAL')
+_l_avg_baselined, = ax.step(vel, avg_baselined, linewidth=0.5, color='cyan', label='AVG BASELINED')
+_l_avg_white, = ax.step(vel, avg_white_original, linewidth=0.5, color='black', label='AVG WHITE')
 
 # rank the pixels based on original all mom0
 flat_max = mom0_original_all.ravel()
@@ -104,21 +181,7 @@ rank_map[iy_all, ix_all] = np.arange(1, mom0_original_all.size + 1)
 total = mom0_original_all.size
 
 def setup_plot():
-    global _px_marker_1,_px_marker_2,_px_marker_3,_px_marker_4,_px_marker_5,_px_marker_6, _rank_text, _l_orig, _l_base, _l_baselined, _spans, _stats_text
-
-    # marker on the mom0 map — a Line2D is easier to update than a PathCollection
-    _px_marker_1, = ax_mom0_original_all.plot(
-        [], [], marker='x', color='red', linestyle='none', ms=8, mew=1.5)
-    _px_marker_2, = ax_mom0_original_window.plot(
-        [], [], marker='x', color='red', linestyle='none', ms=8, mew=1.5)
-    _px_marker_3, = ax_mom0_original_nonwindow.plot(
-        [], [], marker='x', color='red', linestyle='none', ms=8, mew=1.5)
-    _px_marker_4, = ax_mom0_baselined_all.plot(
-        [], [], marker='x', color='red', linestyle='none', ms=8, mew=1.5)
-    _px_marker_5, = ax_mom0_baselined_window.plot(
-        [], [], marker='x', color='red', linestyle='none', ms=8, mew=1.5)
-    _px_marker_6, = ax_mom0_baselined_nonwindow.plot(
-        [], [], marker='x', color='red', linestyle='none', ms=8, mew=1.5)
+    global _l_window, _rank_text, _l_orig, _l_base, _l_baselined, _spans, _stats_text
 
     # rank / coordinate annotation
     _rank_text = ax.text(0, 1, '', transform=ax.transAxes,
@@ -131,12 +194,8 @@ def setup_plot():
     _l_orig,       = ax.step([], [], lw=0.5, label='ORIGINAL')
     _l_base,       = ax.step([], [], lw=1.0, label='BASELINE')
     _l_baselined,  = ax.step([], [], lw=0.5, label='BASELINED')
+    _l_window,     = ax.plot([], [], lw=0.5, label='WINDOW',)
 
-    # yellow window rectangles (fixed x-extent, only alpha changes)
-    _spans = [
-        ax.axvspan(vel_axes['WINDOW'][i], vel_axes['WINDOW'][i+1], color='yellow')
-        for i in range(len(vel_axes['WINDOW']) - 1)
-    ]
 
 
 # add a row for showing comments
@@ -173,9 +232,21 @@ ax_smooth_baselined = fig.add_subplot(gs_smooth[1,0])
 ax_smooth_white = fig.add_subplot(gs_smooth[2,0])
 ax_smooth = fig.add_subplot(gs_smooth[:,1])
 
-tb_smooth_original = TextBox(ax_smooth_original, 'kernel size [original] (pix)', initial='0')
-tb_smooth_baselined = TextBox(ax_smooth_baselined, 'kernel size [baselined] (pix)', initial='0')
-tb_smooth_white = TextBox(ax_smooth_white, 'kernel size [white] (pix)', initial='0')
+class FastTextBox(TextBox):
+    def _rendercursor(self):
+        drawon, self.drawon = self.drawon, False   # suppress the blocking draw()
+        super()._rendercursor()
+        self.drawon = drawon
+        self.ax.figure.canvas.draw_idle()          # coalesced redraw instead
+
+kw = dict(initial='10', color='0.95', hovercolor='0.95')
+tb_smooth_original  = FastTextBox(ax_smooth_original,  'kernel size [original] (pix)',  **kw)
+tb_smooth_baselined = FastTextBox(ax_smooth_baselined, 'kernel size [baselined] (pix)', **kw)
+tb_smooth_white     = FastTextBox(ax_smooth_white,     'kernel size [white] (pix)',     **kw)
+
+# tb_smooth_original = TextBox(ax_smooth_original, 'kernel size [original] (pix)', initial='0')
+# tb_smooth_baselined = TextBox(ax_smooth_baselined, 'kernel size [baselined] (pix)', initial='0')
+# tb_smooth_white = TextBox(ax_smooth_white, 'kernel size [white] (pix)', initial='0')
 b_smooth = Button(ax_smooth, "smooth")
 
 b_left = Button(ax_left, '◀')
@@ -233,16 +304,7 @@ b_relim.on_clicked(relim)
 state = {'x': x, 'y': y}
 ny, nx = data['ORIGINAL'].shape[1], data['ORIGINAL'].shape[2]
 
-# ===== per-pixel update =====
-def update_plot(x, y):
-    # 1) move the marker
-    _px_marker_1.set_data([x], [y])
-    _px_marker_2.set_data([x], [y])
-    _px_marker_3.set_data([x], [y])
-    _px_marker_4.set_data([x], [y])
-    _px_marker_5.set_data([x], [y])
-    _px_marker_6.set_data([x], [y])
-
+def update_spectrum(x,y):
     # 2) coordinate + rank text
     rank = rank_map[y, x]
     _rank_text.set_text(f'(x,y)=({x},{y}); mom0 rank = ({rank}/{total})')
@@ -252,8 +314,6 @@ def update_plot(x, y):
     mask = data['WINDOW'][:, y, x]
     linefree = np.where(mask==1, original, np.nan)
     linebusy = np.where(mask==0, original, np.nan)
-#    odd_avg = np.nanmean(linefree[::2])
-#    even_avg = np.nanmean(linefree[1::2])
     std_linefree = np.nanstd(linefree)
     std_linebusy = np.nanstd(linebusy)
     std_all = np.nanstd(original)
@@ -262,31 +322,36 @@ def update_plot(x, y):
     # smooth the spectra first if necessary:
     if tb_smooth_original.text != '0':
         kernel_size = int(tb_smooth_original.text)
-        smoothed_original = spectrum_smooth_kernel(data['ORIGINAL'][:,   y, x], vel_axes['ORIGINAL'], kernel_size)
-        _l_orig.set_data(vel_axes['ORIGINAL'], smoothed_original)
+        smoothed_original = spectrum_smooth_kernel(data['ORIGINAL'][:,   y, x], vel, kernel_size)
+        _l_orig.set_data(vel, smoothed_original)
     else:
-        _l_orig.set_data(     vel_axes['ORIGINAL'],   data['ORIGINAL'][:,   y, x])
+        _l_orig.set_data(vel,   data['ORIGINAL'][:,   y, x])
 
     if tb_smooth_baselined.text != '0':
         kernel_size = int(tb_smooth_baselined.text)
-        smoothed_baselined = spectrum_smooth_kernel(data['BASELINED'][:,   y, x], vel_axes['BASELINED'], kernel_size)
-        _l_baselined.set_data(vel_axes['BASELINED'], smoothed_baselined)
+        smoothed_baselined = spectrum_smooth_kernel(data['BASELINED'][:,   y, x], vel, kernel_size)
+        _l_baselined.set_data(vel, smoothed_baselined)
     else:
-        _l_baselined.set_data(vel_axes['BASELINED'],  data['BASELINED'][:,  y, x])
+        _l_baselined.set_data(vel,  data['BASELINED'][:,  y, x])
 
     if tb_smooth_white.text != '0':
         kernel_size = int(tb_smooth_white.text)
-        smoothed_white = spectrum_smooth_kernel(avg_white_original, vel_axes['BASELINED'], kernel_size)
-        _l_avg_white.set_data(vel_axes['BASELINED'], smoothed_white)
+        smoothed_white = spectrum_smooth_kernel(avg_white_original, vel, kernel_size)
+        _l_avg_white.set_data(vel, smoothed_white)
     else:
-        _l_avg_white.set_data(vel_axes['BASELINED'], avg_white_original)
+        _l_avg_white.set_data(vel, avg_white_original)
 
-    _l_base.set_data(     vel_axes['BASELINE'],   data['BASELINE'][:,   y, x])
+    _l_base.set_data(     vel,   data['BASELINE'][:,   y, x])
+    _l_window.set_data(   vel,   1-data['WINDOW'][:,   y, x])
 
-    # 4) window opacities
-    for i, span in enumerate(_spans):
-        span.set_alpha(1.0 - data['WINDOW'][i, y, x])
     fig.canvas.draw_idle()
+
+
+# ===== per-pixel update =====
+def update_plot(x, y):
+    update_mom_marker(x, y)
+    update_spectrum(x,y)
+
 
 def move(dx, dy):
     x_ = int(np.clip(state['x'] + dx, 0, nx - 1))
@@ -306,21 +371,8 @@ b_down .on_clicked(lambda e: move(0, -1))
 b_left .on_clicked(lambda e: move(-1, 0))
 b_right.on_clicked(lambda e: move( 1, 0))
 
-b_smooth.on_clicked(lambda e: update_plot(state['x'], state['y']))
+b_smooth.on_clicked(lambda e: update_spectrum(state['x'], state['y']))
 
-def on_click(event):
-    if event.inaxes not in [ax_mom0_original_all, ax_mom0_original_window, ax_mom0_original_nonwindow, ax_mom0_baselined_all, ax_mom0_baselined_window, ax_mom0_baselined_nonwindow]:
-        return
-    if event.xdata is None or event.ydata is None:
-        return
-
-    x_ = int(np.clip(np.round(event.xdata), 0, nx - 1))
-    y_ = int(np.clip(np.round(event.ydata), 0, ny - 1))
-
-    state['x'], state['y'] = x_, y_
-    update_plot(x_, y_)
-
-fig.canvas.mpl_connect('button_press_event', on_click)
 
 fig.suptitle(f"{hdul[0].header['OBJECT']} - {hdul[0].header['LINE']}", fontsize=24)
 
